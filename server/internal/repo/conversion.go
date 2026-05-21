@@ -13,10 +13,10 @@ func NewConversionRepo(db *sql.DB) *ConversionRepo { return &ConversionRepo{db} 
 
 func (r *ConversionRepo) Create(c *model.Conversion) error {
 	return r.db.QueryRow(
-		`INSERT INTO conversions (user_id, status, original_url, format_in, file_size_in)
-		 VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at`,
-		c.UserID, c.Status, c.OriginalURL, c.FormatIn, c.FileSizeIn,
-	).Scan(&c.ID, &c.CreatedAt)
+		`INSERT INTO conversions (id, user_id, status, original_url, format_in, file_size_in)
+		 VALUES ($1,$2,$3,$4,$5,$6) RETURNING created_at`,
+		c.ID, c.UserID, c.Status, c.OriginalURL, c.FormatIn, c.FileSizeIn,
+	).Scan(&c.CreatedAt)
 }
 
 func (r *ConversionRepo) FindByID(id string) (*model.Conversion, error) {
@@ -105,11 +105,16 @@ func (r *ConversionRepo) GetTodayQuota(userID string) (int, error) {
 	return count, err
 }
 
-func (r *ConversionRepo) IncrementQuota(userID string) error {
-	_, err := r.db.Exec(
+func (r *ConversionRepo) IncrementQuota(userID string, max int) (bool, error) {
+	res, err := r.db.Exec(
 		`INSERT INTO daily_quotas (user_id, date, count) VALUES ($1, CURRENT_DATE, 1)
-		 ON CONFLICT (user_id, date) DO UPDATE SET count = daily_quotas.count + 1`,
-		userID,
+		 ON CONFLICT (user_id, date) DO UPDATE SET count = daily_quotas.count + 1
+		 WHERE daily_quotas.count < $2`,
+		userID, max,
 	)
-	return err
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n > 0, nil
 }

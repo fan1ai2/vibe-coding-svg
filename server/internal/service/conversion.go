@@ -37,14 +37,6 @@ func NewConversionService(cfg *config.Config, r *repo.ConversionRepo, s *Storage
 }
 
 func (s *ConversionService) Enqueue(userID string, file io.Reader, filename string, size int64) (*model.Conversion, error) {
-	count, err := s.repo.GetTodayQuota(userID)
-	if err != nil {
-		return nil, fmt.Errorf("quota check: %w", err)
-	}
-	if count >= MaxDailyConversions {
-		return nil, fmt.Errorf("daily quota exceeded (%d/%d)", count, MaxDailyConversions)
-	}
-
 	ext := filepath.Ext(filename)
 	if ext == "" {
 		ext = ".png"
@@ -64,23 +56,9 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 		return nil, fmt.Errorf("upload: %w", err)
 	}
 
-	conv := &model.Conversion{
-		UserID:      userID,
-		Status:      model.StatusPending,
-		OriginalURL: originalKey,
-		FormatIn:    formatIn,
-		FileSizeIn:  size,
-	}
-	if err := s.repo.Create(conv); err != nil {
-		return nil, fmt.Errorf("create conversion: %w", err)
-	}
-
-	if err := s.repo.IncrementQuota(userID); err != nil {
-		return nil, fmt.Errorf("quota increment: %w", err)
-	}
-
+	convID := uuid.New().String()
 	payload := ConversionPayload{
-		ConversionID: conv.ID,
+		ConversionID: convID,
 		OriginalKey:  originalKey,
 		FormatIn:     formatIn,
 	}
@@ -91,6 +69,26 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 	task := asynq.NewTask("conversion:process", body)
 	if _, err := s.client.Enqueue(task); err != nil {
 		return nil, fmt.Errorf("enqueue: %w", err)
+	}
+
+	conv := &model.Conversion{
+		ID:          convID,
+		UserID:      userID,
+		Status:      model.StatusPending,
+		OriginalURL: originalKey,
+		FormatIn:    formatIn,
+		FileSizeIn:  size,
+	}
+	if err := s.repo.Create(conv); err != nil {
+		return nil, fmt.Errorf("create conversion: %w", err)
+	}
+
+	ok, err := s.repo.IncrementQuota(userID, MaxDailyConversions)
+	if err != nil {
+		return nil, fmt.Errorf("quota increment: %w", err)
+	}
+	if !ok {
+		return nil, fmt.Errorf("daily quota exceeded (%d)", MaxDailyConversions)
 	}
 
 	return conv, nil

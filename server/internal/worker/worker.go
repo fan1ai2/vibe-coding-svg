@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -37,7 +38,9 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 
 	reader, err := w.storage.Download(service.BucketOriginals, payload.OriginalKey)
 	if err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "download failed: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "download failed: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("download original: %w", err)
 	}
 	defer reader.Close()
@@ -48,12 +51,16 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 
 	inFile, err := os.Create(inPath)
 	if err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "temp file: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "temp file: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("create temp input: %w", err)
 	}
 	if _, err := io.Copy(inFile, reader); err != nil {
 		inFile.Close()
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "write temp: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "write temp: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("write temp input: %w", err)
 	}
 	inFile.Close()
@@ -61,27 +68,41 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 	defer os.Remove(outPath)
 
 	if err := ConvertRasterToSVG(inPath, outPath); err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "conversion failed: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "conversion failed: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("convert: %w", err)
 	}
 
 	svgData, err := os.ReadFile(outPath)
 	if err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "read result: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "read result: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("read svg result: %w", err)
 	}
 
 	resultKey := payload.OriginalKey + ".svg"
 	resultFile, err := os.Open(outPath)
 	if err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "open result: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "open result: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("open svg file: %w", err)
 	}
 	defer resultFile.Close()
 
-	fi, _ := resultFile.Stat()
+	fi, err := resultFile.Stat()
+	if err != nil {
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "stat result: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
+		return fmt.Errorf("stat svg file: %w", err)
+	}
 	if err := w.storage.Upload(service.BucketResults, resultKey, "image/svg+xml", resultFile, fi.Size()); err != nil {
-		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "upload result: "+err.Error())
+		if uerr := w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "upload result: "+err.Error()); uerr != nil {
+			log.Printf("failed to update status for %s: %v", payload.ConversionID, uerr)
+		}
 		return fmt.Errorf("upload svg result: %w", err)
 	}
 
