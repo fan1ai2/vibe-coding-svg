@@ -46,7 +46,7 @@ func (r *ConversionRepo) FindByUserID(userID string, limit, offset int) ([]*mode
 		return nil, err
 	}
 	defer rows.Close()
-	var list []*model.Conversion
+	list := make([]*model.Conversion, 0)
 	for rows.Next() {
 		c := &model.Conversion{}
 		if err := rows.Scan(&c.ID, &c.UserID, &c.Status, &c.OriginalURL, &c.SVGURL, &c.ThumbnailURL,
@@ -65,21 +65,33 @@ func (r *ConversionRepo) UpdateStatus(id, status, errMsg string) error {
 		now := time.Now()
 		completedAt = &now
 	}
-	_, err := r.db.Exec(
+	res, err := r.db.Exec(
 		`UPDATE conversions SET status=$1, error_message=$2, completed_at=$3 WHERE id=$4`,
 		status, errMsg, completedAt, id,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
-func (r *ConversionRepo) UpdateResult(id, svgURL, thumbnailURL string, fileSizeOut, pathCount, colorCount int64) error {
+func (r *ConversionRepo) UpdateResult(id, svgURL, thumbnailURL string, fileSizeOut, pathCount, colorCount int) error {
 	now := time.Now()
-	_, err := r.db.Exec(
+	res, err := r.db.Exec(
 		`UPDATE conversions SET status=$1, svg_url=$2, thumbnail_url=$3,
 		 file_size_out=$4, path_count=$5, color_count=$6, completed_at=$7 WHERE id=$8`,
 		model.StatusCompleted, svgURL, thumbnailURL, fileSizeOut, pathCount, colorCount, now, id,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *ConversionRepo) GetTodayQuota(userID string) (int, error) {
