@@ -56,7 +56,11 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 
 	originalKey := fmt.Sprintf("%s/%s%s", userID, uuid.New().String(), ext)
 
-	if err := s.storage.Upload(BucketOriginals, originalKey, "image/"+formatIn, file, size); err != nil {
+	contentType := "image/" + formatIn
+	if formatIn == "jpg" {
+		contentType = "image/jpeg"
+	}
+	if err := s.storage.Upload(BucketOriginals, originalKey, contentType, file, size); err != nil {
 		return nil, fmt.Errorf("upload: %w", err)
 	}
 
@@ -80,7 +84,10 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 		OriginalKey:  originalKey,
 		FormatIn:     formatIn,
 	}
-	body, _ := json.Marshal(payload)
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal payload: %w", err)
+	}
 	task := asynq.NewTask("conversion:process", body)
 	if _, err := s.client.Enqueue(task); err != nil {
 		return nil, fmt.Errorf("enqueue: %w", err)
