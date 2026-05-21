@@ -36,8 +36,12 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	convSvc := service.NewConversionService(cfg, convRepo, storage, asynqClient)
 	convH := handler.NewConversionHandler(cfg, convSvc)
 
+	healthH := handler.NewHealthHandler(db)
+
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit(100))
+
+	r.GET("/health", healthH.Check)
 
 	api := r.Group("/api/v1")
 	{

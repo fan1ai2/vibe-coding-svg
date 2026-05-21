@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
+	"github.com/fan1ai2/vibe-coding-svg/server/internal/migrate"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/router"
 	_ "github.com/lib/pq"
 )
@@ -21,6 +22,10 @@ func main() {
 		log.Fatalf("database ping failed: %v", err)
 	}
 	log.Println("connected to postgres")
+
+	if err := migrate.Run(db, "migrations"); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
 
 	r := router.Setup(cfg, db)
 	log.Printf("API server starting on :%s", cfg.Port)

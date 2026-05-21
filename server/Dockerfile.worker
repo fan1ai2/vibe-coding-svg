@@ -1,0 +1,24 @@
+FROM golang:1.25-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /worker ./cmd/worker/
+
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates curl
+
+# vtracer: install pre-built binary
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+      x86_64)  BIN=x86_64 ;; \
+      aarch64) BIN=arm64 ;; \
+      *)       echo "unsupported arch: $ARCH"; exit 1 ;; \
+    esac && \
+    curl -fsSL "https://github.com/visioncortex/vtracer/releases/download/v0.6.4/vtracer-linux-${BIN}" -o /usr/local/bin/vtracer && \
+    chmod +x /usr/local/bin/vtracer
+
+WORKDIR /app
+COPY --from=builder /worker .
+COPY migrations/ ./migrations/
+CMD ["./worker"]

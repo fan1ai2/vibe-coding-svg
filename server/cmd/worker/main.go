@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
+	"github.com/fan1ai2/vibe-coding-svg/server/internal/migrate"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/repo"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/service"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/worker"
@@ -24,6 +25,10 @@ func main() {
 		log.Fatalf("db ping: %v", err)
 	}
 	log.Println("connected to postgres")
+
+	if err := migrate.Run(db, "migrations"); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
 
 	storage, err := service.NewStorage(cfg)
 	if err != nil {
