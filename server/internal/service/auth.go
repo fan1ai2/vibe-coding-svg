@@ -158,7 +158,9 @@ func (s *AuthService) getGoogleAccessToken(code string) (string, error) {
 }
 
 func (s *AuthService) getGoogleUser(token string) (*GoogleUser, error) {
-	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token)
+	req, _ := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
