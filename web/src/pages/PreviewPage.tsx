@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { conversions, ApiError, type Conversion } from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
+
+function authFetch(url: string, init?: RequestInit): Promise<Response> {
+  const token = localStorage.getItem('token');
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...init, headers });
+}
 
 export default function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -9,24 +18,42 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
+  const [originalBlobUrl, setOriginalBlobUrl] = useState<string | null>(null);
+  const revokedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     conversions.get(id)
       .then(res => {
         setConv(res.data);
-        if (res.data.status === 'completed') {
-          return fetch(`/api/v1/files/results/${res.data.svg_url}`).then(r => r.text());
+        const promises: Promise<void>[] = [];
+        if (res.data.status === 'completed' && res.data.svg_url) {
+          promises.push(
+            authFetch(`/api/v1/files/results/${res.data.svg_url}`)
+              .then(r => r.text())
+              .then(svg => setSvgContent(svg))
+          );
+          promises.push(
+            authFetch(`/api/v1/files/originals/${res.data.original_url}`)
+              .then(r => r.blob())
+              .then(blob => {
+                const url = URL.createObjectURL(blob);
+                if (revokedRef.current) URL.revokeObjectURL(revokedRef.current);
+                revokedRef.current = url;
+                setOriginalBlobUrl(url);
+              })
+          );
         }
-        return null;
-      })
-      .then(svg => {
-        if (svg) setSvgContent(svg);
+        return Promise.all(promises);
       })
       .catch(err => {
         setError(err instanceof ApiError ? err.message : 'Failed to load');
       })
       .finally(() => setLoading(false));
+
+    return () => {
+      if (revokedRef.current) URL.revokeObjectURL(revokedRef.current);
+    };
   }, [id]);
 
   if (loading) return <LoadingSpinner label="Loading preview..." />;
@@ -75,7 +102,7 @@ export default function PreviewPage() {
           <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Original ({conv.format_in})</h3>
           <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
             <img
-              src={`/api/v1/files/originals/${conv.original_url}`}
+              src={originalBlobUrl ?? ''}
               alt="Original"
               className="max-w-full max-h-full object-contain"
             />

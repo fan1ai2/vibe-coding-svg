@@ -47,7 +47,6 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 	{
 		files := api.Group("/files")
-		files.Use(middleware.JWTAuth(cfg))
 		{
 			files.GET("/:bucket/*key", fileH.Serve)
 		}
