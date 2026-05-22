@@ -1,4 +1,4 @@
-version: "3.9"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -49,10 +49,9 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       JWT_SECRET: dev-secret-change-in-prod
-      GITHUB_CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
-      GITHUB_CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
-      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
-      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      GITHUB_CLIENT_ID: "Ov23liwtkDzU3n2yvRLJ"
+      GITHUB_CLIENT_SECRET: "cd5b23353a2bd0ade00105b12e789647773920b9"
+      FRONTEND_URL: "http://10.100.1.124:5173"
     depends_on:
       postgres:
         condition: service_healthy
