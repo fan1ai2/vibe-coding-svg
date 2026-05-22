@@ -20,6 +20,17 @@ func NewConversionHandler(cfg *config.Config, svc *service.ConversionService) *C
 	return &ConversionHandler{cfg: cfg, svc: svc}
 }
 
+// Upload godoc
+// @Summary      Upload an image for conversion
+// @Tags         conversions
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Param        file  formData  file  true  "PNG or JPEG image file"
+// @Success      201   {object}  object{data=model.Conversion}
+// @Failure      400   {object}  object{error=object{code=string,message=string}}
+// @Failure      413   {object}  object{error=object{code=string,message=string}}
+// @Failure      429   {object}  object{error=object{code=string,message=string}}
+// @Router       /conversions [post]
 func (h *ConversionHandler) Upload(c *gin.Context) {
 	userID := c.GetString("user_id")
 
@@ -48,6 +59,14 @@ func (h *ConversionHandler) Upload(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": conv})
 }
 
+// List godoc
+// @Summary      List conversions
+// @Tags         conversions
+// @Security     BearerAuth
+// @Param        limit   query     int  false  "Page size"  default(20)
+// @Param        offset  query     int  false  "Page offset" default(0)
+// @Success      200     {object}  object{data=[]model.Conversion}
+// @Router       /conversions [get]
 func (h *ConversionHandler) List(c *gin.Context) {
 	userID := c.GetString("user_id")
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -64,6 +83,14 @@ func (h *ConversionHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": list})
 }
 
+// Status godoc
+// @Summary      Get conversion status
+// @Tags         conversions
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Conversion ID"
+// @Success      200  {object}  object{data=model.Conversion}
+// @Failure      404  {object}  object{error=object{code=string,message=string}}
+// @Router       /conversions/{id} [get]
 func (h *ConversionHandler) Status(c *gin.Context) {
 	userID := c.GetString("user_id")
 	id := c.Param("id")
@@ -81,6 +108,14 @@ func (h *ConversionHandler) Status(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": conv})
 }
 
+// Download godoc
+// @Summary      Download SVG result
+// @Tags         conversions
+// @Security     BearerAuth
+// @Param        id   path      string  true  "Conversion ID"
+// @Success      200  {file}    image/svg+xml
+// @Failure      404  {object}  object{error=object{code=string,message=string}}
+// @Router       /conversions/{id}/download [get]
 func (h *ConversionHandler) Download(c *gin.Context) {
 	userID := c.GetString("user_id")
 	id := c.Param("id")

@@ -13,8 +13,6 @@ type Config struct {
 	JWTSecret      string
 	GithubClientID string
 	GithubSecret   string
-	GoogleClientID string
-	GoogleSecret   string
 	MaxFileSize    int64
 	FrontendURL    string
 }
@@ -31,10 +29,8 @@ func Load() *Config {
 		JWTSecret:      envOr("JWT_SECRET", "dev-secret-change-in-prod"),
 		GithubClientID: os.Getenv("GITHUB_CLIENT_ID"),
 		GithubSecret:   os.Getenv("GITHUB_CLIENT_SECRET"),
-		GoogleClientID: os.Getenv("GOOGLE_CLIENT_ID"),
-		GoogleSecret:   os.Getenv("GOOGLE_CLIENT_SECRET"),
 		MaxFileSize:    10 << 20,
-		FrontendURL:    envOr("FRONTEND_URL", "http://localhost:5173"),
+		FrontendURL:    envOr("FRONTEND_URL", "http://localhost:8080"),
 	}
 }
 

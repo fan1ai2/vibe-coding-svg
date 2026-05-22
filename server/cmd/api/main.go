@@ -10,6 +10,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @title           SVG Converter API
+// @version         1.0
+// @description     Bitmap to SVG vector conversion service
+// @host            localhost:8080
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in              header
+// @name            Authorization
+
 func main() {
 	cfg := config.Load()
 

@@ -12,8 +12,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (tok) {
     headers['Authorization'] = `Bearer ${tok}`;
   }
-  // Don't set Content-Type for FormData (browser sets it with boundary)
-  if (!(options.body instanceof FormData)) {
+  // Only set Content-Type for requests with a JSON body (not for GET or FormData)
+  if (options.body && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 

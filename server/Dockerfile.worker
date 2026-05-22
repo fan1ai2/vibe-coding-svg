@@ -1,24 +1,26 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-alpine AS gobuilder
+ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /worker ./cmd/worker/
 
+FROM rust:alpine AS rustbuilder
+RUN apk add --no-cache musl-dev git
+# Use USTC crate mirror
+ENV CARGO_HOME=/root/.cargo
+RUN mkdir -p $CARGO_HOME && \
+    printf '[source.crates-io]\nreplace-with = "ustc"\n\n[source.ustc]\nregistry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"\n' > $CARGO_HOME/config.toml
+RUN git clone --branch 0.6.4 https://github.com/visioncortex/vtracer.git /vtracer-src && \
+    cd /vtracer-src && \
+    cargo build --release --manifest-path cmdapp/Cargo.toml && \
+    cp target/release/vtracer /vtracer-bin
+
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates curl
-
-# vtracer: install pre-built binary
-RUN ARCH=$(uname -m) && \
-    case "$ARCH" in \
-      x86_64)  BIN=x86_64 ;; \
-      aarch64) BIN=arm64 ;; \
-      *)       echo "unsupported arch: $ARCH"; exit 1 ;; \
-    esac && \
-    curl -fsSL "https://github.com/visioncortex/vtracer/releases/download/v0.6.4/vtracer-linux-${BIN}" -o /usr/local/bin/vtracer && \
-    chmod +x /usr/local/bin/vtracer
-
+RUN apk add --no-cache ca-certificates
 WORKDIR /app
-COPY --from=builder /worker .
+COPY --from=gobuilder /worker .
+COPY --from=rustbuilder /vtracer-bin /usr/local/bin/vtracer
 COPY migrations/ ./migrations/
 CMD ["./worker"]

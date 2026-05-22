@@ -110,9 +110,9 @@ func (s *ConversionService) GetDownload(id string) (io.ReadCloser, *model.Conver
 	if err != nil {
 		return nil, nil, err
 	}
-	if conv == nil || conv.Status != model.StatusCompleted || conv.SVGURL == "" {
+	if conv == nil || conv.Status != model.StatusCompleted || conv.SVGURL == nil || *conv.SVGURL == "" {
 		return nil, conv, fmt.Errorf("conversion not ready")
 	}
-	reader, err := s.storage.Download(BucketResults, conv.SVGURL)
+	reader, err := s.storage.Download(BucketResults, *conv.SVGURL)
 	return reader, conv, err
 }
