@@ -16,7 +16,7 @@ export default function PreviewPage() {
       .then(res => {
         setConv(res.data);
         if (res.data.status === 'completed') {
-          return fetch(res.data.svg_url!).then(r => r.text());
+          return fetch(`/api/v1/files/results/${res.data.svg_url}`).then(r => r.text());
         }
         return null;
       })
@@ -75,7 +75,7 @@ export default function PreviewPage() {
           <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Original ({conv.format_in})</h3>
           <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
             <img
-              src={conv.original_url}
+              src={`/api/v1/files/originals/${conv.original_url}`}
               alt="Original"
               className="max-w-full max-h-full object-contain"
             />

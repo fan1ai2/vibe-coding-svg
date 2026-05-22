@@ -37,6 +37,7 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	convH := handler.NewConversionHandler(cfg, convSvc)
 
 	healthH := handler.NewHealthHandler(db)
+	fileH := handler.NewFileHandler(storage)
 
 	r.Use(middleware.CORS())
 	r.Use(middleware.RateLimit(100))
@@ -45,12 +46,16 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 
 	api := r.Group("/api/v1")
 	{
+		files := api.Group("/files")
+		files.Use(middleware.JWTAuth(cfg))
+		{
+			files.GET("/:bucket/*key", fileH.Serve)
+		}
+
 		auth := api.Group("/auth")
 		{
 			auth.GET("/github/login", authH.GithubLogin)
-			auth.GET("/github/callback", authH.GithubCallback)
-			auth.GET("/google/login", authH.GoogleLogin)
-			auth.GET("/google/callback", authH.GoogleCallback)
+		auth.GET("/github/callback", authH.GithubCallback)
 			auth.POST("/refresh", middleware.JWTAuth(cfg), authH.Refresh)
 			auth.GET("/me", middleware.JWTAuth(cfg), authH.Me)
 		}
