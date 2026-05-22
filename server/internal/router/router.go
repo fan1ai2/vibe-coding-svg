@@ -5,15 +5,12 @@ import (
 	"log"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
-	_ "github.com/fan1ai2/vibe-coding-svg/server/docs"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/handler"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/middleware"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/repo"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
@@ -47,12 +44,10 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 
 	r.GET("/health", healthH.Check)
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	api := r.Group("/api/v1")
 	{
 		files := api.Group("/files")
-		files.Use(middleware.JWTAuth(cfg))
+		// files group is public (keys are unguessable UUIDs)
 		{
 			files.GET("/:bucket/*key", fileH.Serve)
 		}
