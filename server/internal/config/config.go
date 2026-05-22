@@ -16,6 +16,7 @@ type Config struct {
 	GoogleClientID string
 	GoogleSecret   string
 	MaxFileSize    int64
+	FrontendURL    string
 }
 
 func Load() *Config {
@@ -33,6 +34,7 @@ func Load() *Config {
 		GoogleClientID: os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleSecret:   os.Getenv("GOOGLE_CLIENT_SECRET"),
 		MaxFileSize:    10 << 20,
+		FrontendURL:    envOr("FRONTEND_URL", "http://localhost:5173"),
 	}
 }
 

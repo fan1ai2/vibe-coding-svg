@@ -38,7 +38,7 @@ func (h *AuthHandler) GithubCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "TOKEN_ERROR", "message": "failed to generate token"}})
 		return
 	}
-	c.Redirect(http.StatusFound, "/callback?token="+token)
+	c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/callback?token="+token)
 }
 
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
@@ -64,7 +64,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "TOKEN_ERROR", "message": "failed to generate token"}})
 		return
 	}
-	c.Redirect(http.StatusFound, "/callback?token="+token)
+	c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/callback?token="+token)
 }
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
