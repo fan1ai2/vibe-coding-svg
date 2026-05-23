@@ -109,7 +109,7 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 	pathCount := CountSVGPaths(svgData)
 	fileSizeOut := len(svgData)
 
-	if err := w.repo.UpdateResult(payload.ConversionID, resultKey, "", fileSizeOut, pathCount, 0); err != nil {
+	if err := w.repo.UpdateResult(payload.ConversionID, resultKey, payload.OriginalKey, fileSizeOut, pathCount, 0); err != nil {
 		return fmt.Errorf("update result in db: %w", err)
 	}
 

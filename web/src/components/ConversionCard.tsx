@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Conversion } from '../api/client';
 
@@ -21,15 +22,26 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function thumbSrc(conv: Conversion): string | null {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  if (conv.thumbnail_url) {
+    return `/api/v1/files/originals/${conv.thumbnail_url}?token=${token}`;
+  }
+  return `/api/v1/files/originals/${conv.original_url}?token=${token}`;
+}
+
 export default function ConversionCard({ conv }: { conv: Conversion }) {
+  const imgSrc = useMemo(() => thumbSrc(conv), [conv.id]);
+
   return (
     <Link
       to={`/workspace/preview/${conv.id}`}
       className="block rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow overflow-hidden"
     >
       <div className="aspect-video bg-gray-100 flex items-center justify-center">
-        {conv.thumbnail_url ? (
-          <img src={conv.thumbnail_url} alt="" className="w-full h-full object-cover" />
+        {imgSrc ? (
+          <img src={imgSrc} alt="" className="w-full h-full object-cover" />
         ) : (
           <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}

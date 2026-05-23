@@ -11,14 +11,19 @@ import (
 
 func JWTAuth(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
-		if header == "" || !strings.HasPrefix(header, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": gin.H{"code": "UNAUTHORIZED", "message": "missing or malformed token"},
-			})
-			return
+		tokenStr := ""
+		if tok := c.Query("token"); tok != "" {
+			tokenStr = tok
+		} else {
+			header := c.GetHeader("Authorization")
+			if header == "" || !strings.HasPrefix(header, "Bearer ") {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error": gin.H{"code": "UNAUTHORIZED", "message": "missing or malformed token"},
+				})
+				return
+			}
+			tokenStr = strings.TrimPrefix(header, "Bearer ")
 		}
-		tokenStr := strings.TrimPrefix(header, "Bearer ")
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			return []byte(cfg.JWTSecret), nil
 		})

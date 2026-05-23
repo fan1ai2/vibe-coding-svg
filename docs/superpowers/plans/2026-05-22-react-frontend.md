@@ -1,14 +1,14 @@
-# React Frontend Implementation Plan
+# React 前端实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 按任务逐步实现此计划。步骤使用复选框 (`- [ ]`) 语法进行跟踪。
 
-**Goal:** Build a complete React SPA frontend in `web/` that covers upload → processing → preview → download, with OAuth login and conversion history.
+**目标：** 在 `web/` 目录中构建完整的 React SPA 前端，覆盖上传 → 处理中 → 预览 → 下载的完整流程，并包含 OAuth 登录和转换历史记录。
 
-**Architecture:** Vite dev server proxies `/api` to Go backend on :8080. OAuth callback flow redirects through backend, which sends the browser back to frontend's `/callback?token=...` route. JWT stored in localStorage. Protected routes behind AuthContext gate.
+**架构：** Vite 开发服务器将 `/api` 代理到 Go 后端的 :8080 端口。OAuth 回调流程通过后端重定向，后端将浏览器重定向到前端的 `/callback?token=...` 路由。JWT 存储在 localStorage 中。受保护路由通过 AuthContext 门控。
 
-**Tech Stack:** Vite 6, React 19, React Router 7, Tailwind CSS 3, TypeScript 5
+**技术栈：** Vite 6、React 19、React Router 7、Tailwind CSS 3、TypeScript 5
 
-**File Structure:**
+**文件结构：**
 ```
 web/
 ├── index.html
@@ -19,47 +19,47 @@ web/
 ├── tailwind.config.js
 ├── postcss.config.js
 ├── src/
-│   ├── main.tsx              # Entry point
-│   ├── App.tsx               # Router + AuthProvider
-│   ├── index.css             # Tailwind directives
+│   ├── main.tsx              # 入口文件
+│   ├── App.tsx               # 路由 + AuthProvider
+│   ├── index.css             # Tailwind 指令
 │   ├── api/
-│   │   └── client.ts         # Fetch wrapper, JWT injection
+│   │   └── client.ts         # Fetch 封装，JWT 注入
 │   ├── context/
-│   │   └── AuthContext.tsx    # Token + user state
+│   │   └── AuthContext.tsx    # Token + 用户状态
 │   ├── components/
-│   │   ├── Layout.tsx         # Sidebar + header + Outlet
-│   │   ├── DropZone.tsx       # Drag/drop file upload
-│   │   ├── ConversionCard.tsx # Library grid card
-│   │   └── LoadingSpinner.tsx # Reusable spinner
+│   │   ├── Layout.tsx         # 侧边栏 + 头部 + Outlet
+│   │   ├── DropZone.tsx       # 拖拽文件上传
+│   │   ├── ConversionCard.tsx # 库网格卡片
+│   │   └── LoadingSpinner.tsx # 可复用加载动画
 │   ├── pages/
-│   │   ├── LandingPage.tsx    # Hero + login CTAs
-│   │   ├── CallbackPage.tsx   # Extract token from URL
-│   │   ├── ConvertPage.tsx    # Upload + processing polling
-│   │   ├── PreviewPage.tsx    # SVG + original comparison
-│   │   └── LibraryPage.tsx    # Conversion history grid
+│   │   ├── LandingPage.tsx    # 首页 + 登录入口
+│   │   ├── CallbackPage.tsx   # 从 URL 提取 token
+│   │   ├── ConvertPage.tsx    # 上传 + 处理状态轮询
+│   │   ├── PreviewPage.tsx    # SVG + 原图对比
+│   │   └── LibraryPage.tsx    # 转换历史网格
 │   └── hooks/
-│       ├── usePolling.ts      # Generic polling hook
-│       └── useConversions.ts  # Conversion data hook
+│       ├── usePolling.ts      # 通用轮询 hook
+│       └── useConversions.ts  # 转换数据 hook
 server/internal/
-    ├── config/config.go       # MODIFY: add FrontendURL
-    └── handler/auth.go        # MODIFY: redirect to FRONTEND_URL
+    ├── config/config.go       # 修改：添加 FrontendURL
+    └── handler/auth.go        # 修改：重定向到 FRONTEND_URL
 ```
 
-**Existing API Endpoints:**
-| Method | Path | Auth | Purpose |
+**已有 API 端点：**
+| 方法 | 路径 | 认证 | 用途 |
 |--------|------|------|---------|
-| GET | /api/v1/auth/github/login | No | GitHub OAuth redirect |
-| GET | /api/v1/auth/github/callback | No | GitHub callback → JWT |
-| GET | /api/v1/auth/google/login | No | Google OAuth redirect |
-| GET | /api/v1/auth/google/callback | No | Google callback → JWT |
-| POST | /api/v1/auth/refresh | JWT | Refresh token |
-| GET | /api/v1/auth/me | JWT | Current user info |
-| POST | /api/v1/conversions | JWT | Upload file → conversion |
-| GET | /api/v1/conversions | JWT | List user's conversions |
-| GET | /api/v1/conversions/:id | JWT | Get conversion status |
-| GET | /api/v1/conversions/:id/download | JWT | Download SVG file |
+| GET | /api/v1/auth/github/login | 否 | GitHub OAuth 重定向 |
+| GET | /api/v1/auth/github/callback | 否 | GitHub 回调 → JWT |
+| GET | /api/v1/auth/google/login | 否 | Google OAuth 重定向 |
+| GET | /api/v1/auth/google/callback | 否 | Google 回调 → JWT |
+| POST | /api/v1/auth/refresh | JWT | 刷新 token |
+| GET | /api/v1/auth/me | JWT | 当前用户信息 |
+| POST | /api/v1/conversions | JWT | 上传文件 → 创建转换 |
+| GET | /api/v1/conversions | JWT | 列出用户转换记录 |
+| GET | /api/v1/conversions/:id | JWT | 获取转换状态 |
+| GET | /api/v1/conversions/:id/download | JWT | 下载 SVG 文件 |
 
-**Backend Response Types (mirrors Go model):**
+**后端响应类型（对应 Go 模型）：**
 ```typescript
 type Conversion = {
   id: string;
@@ -81,21 +81,21 @@ type Conversion = {
 
 ---
 
-### Task 1: Project scaffolding
+### 任务 1：项目脚手架
 
-**Files:**
-- Create: `web/package.json`
-- Create: `web/index.html`
-- Create: `web/tsconfig.json`
-- Create: `web/tsconfig.app.json`
-- Create: `web/vite.config.ts`
-- Create: `web/tailwind.config.js`
-- Create: `web/postcss.config.js`
-- Create: `web/src/main.tsx`
-- Create: `web/src/index.css`
-- Create: `web/src/App.tsx`
+**涉及文件：**
+- 新建：`web/package.json`
+- 新建：`web/index.html`
+- 新建：`web/tsconfig.json`
+- 新建：`web/tsconfig.app.json`
+- 新建：`web/vite.config.ts`
+- 新建：`web/tailwind.config.js`
+- 新建：`web/postcss.config.js`
+- 新建：`web/src/main.tsx`
+- 新建：`web/src/index.css`
+- 新建：`web/src/App.tsx`
 
-- [ ] **Step 1: Create web/package.json**
+- [ ] **步骤 1：创建 web/package.json**
 
 ```json
 {
@@ -126,15 +126,15 @@ type Conversion = {
 }
 ```
 
-- [ ] **Step 2: Create web/index.html**
+- [ ] **步骤 2：创建 web/index.html**
 
 ```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SVG Converter</title>
+    <title>SVG 转换器</title>
   </head>
   <body class="bg-gray-50 text-gray-900 min-h-screen">
     <div id="root"></div>
@@ -143,7 +143,7 @@ type Conversion = {
 </html>
 ```
 
-- [ ] **Step 3: Create web/tsconfig.json**
+- [ ] **步骤 3：创建 web/tsconfig.json**
 
 ```json
 {
@@ -154,7 +154,7 @@ type Conversion = {
 }
 ```
 
-- [ ] **Step 4: Create web/tsconfig.app.json**
+- [ ] **步骤 4：创建 web/tsconfig.app.json**
 
 ```json
 {
@@ -180,7 +180,7 @@ type Conversion = {
 }
 ```
 
-- [ ] **Step 5: Create web/vite.config.ts**
+- [ ] **步骤 5：创建 web/vite.config.ts**
 
 ```typescript
 import { defineConfig } from 'vite'
@@ -200,7 +200,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 6: Create web/tailwind.config.js**
+- [ ] **步骤 6：创建 web/tailwind.config.js**
 
 ```javascript
 /** @type {import('tailwindcss').Config} */
@@ -216,7 +216,7 @@ export default {
 }
 ```
 
-- [ ] **Step 7: Create web/postcss.config.js**
+- [ ] **步骤 7：创建 web/postcss.config.js**
 
 ```javascript
 export default {
@@ -227,7 +227,7 @@ export default {
 }
 ```
 
-- [ ] **Step 8: Create web/src/index.css**
+- [ ] **步骤 8：创建 web/src/index.css**
 
 ```css
 @tailwind base;
@@ -235,7 +235,7 @@ export default {
 @tailwind utilities;
 ```
 
-- [ ] **Step 9: Create web/src/main.tsx**
+- [ ] **步骤 9：创建 web/src/main.tsx**
 
 ```tsx
 import { StrictMode } from 'react'
@@ -253,23 +253,23 @@ createRoot(document.getElementById('root')!).render(
 )
 ```
 
-- [ ] **Step 10: Create web/src/App.tsx (placeholder)**
+- [ ] **步骤 10：创建 web/src/App.tsx（占位符）**
 
 ```tsx
 export default function App() {
-  return <div className="p-8 text-2xl font-bold">SVG Converter</div>
+  return <div className="p-8 text-2xl font-bold">SVG 转换器</div>
 }
 ```
 
-- [ ] **Step 11: Install dependencies and verify**
+- [ ] **步骤 11：安装依赖并验证**
 
 ```bash
 cd /svg-project/web && npm install
 ```
 
-Expected: installs without errors.
+预期结果：安装成功，无错误。
 
-- [ ] **Step 12: Verify dev server starts**
+- [ ] **步骤 12：验证开发服务器能启动**
 
 ```bash
 cd /svg-project/web && npx vite --host 0.0.0.0 &
@@ -278,9 +278,9 @@ curl -s http://localhost:5173 | head -5
 kill %1
 ```
 
-Expected: HTML response with "SVG Converter" title.
+预期结果：返回包含 "SVG 转换器" 标题的 HTML 响应。
 
-- [ ] **Step 13: Commit**
+- [ ] **步骤 13：提交**
 
 ```bash
 git add web/
@@ -289,12 +289,12 @@ git commit -m "feat: scaffold React frontend with Vite, Tailwind, and React Rout
 
 ---
 
-### Task 2: API client module
+### 任务 2：API 客户端模块
 
-**Files:**
-- Create: `web/src/api/client.ts`
+**涉及文件：**
+- 新建：`web/src/api/client.ts`
 
-- [ ] **Step 1: Create web/src/api/client.ts**
+- [ ] **步骤 1：创建 web/src/api/client.ts**
 
 ```typescript
 const BASE = '/api/v1';
@@ -311,7 +311,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (tok) {
     headers['Authorization'] = `Bearer ${tok}`;
   }
-  // Don't set Content-Type for FormData (browser sets it with boundary)
+  // 对 FormData 不设置 Content-Type（浏览器会自动设置 boundary）
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
@@ -335,13 +335,13 @@ export class ApiError extends Error {
   }
 }
 
-// Auth
+// 认证相关 API
 export const auth = {
   me: () => request<{ user_id: string }>('/auth/me'),
   refresh: () => request<{ token: string }>('/auth/refresh', { method: 'POST' }),
 };
 
-// Conversions
+// 转换相关 API
 export type Conversion = {
   id: string;
   user_id: string;
@@ -381,10 +381,10 @@ export const conversions = {
 };
 ```
 
-Run: `cd /svg-project/web && npx tsc --noEmit`
-Expected: no type errors.
+运行：`cd /svg-project/web && npx tsc --noEmit`
+预期结果：无类型错误。
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：提交**
 
 ```bash
 git add web/src/api/client.ts
@@ -393,12 +393,12 @@ git commit -m "feat: add API client module with typed endpoints"
 
 ---
 
-### Task 3: AuthContext — JWT authentication state
+### 任务 3：AuthContext — JWT 认证状态
 
-**Files:**
-- Create: `web/src/context/AuthContext.tsx`
+**涉及文件：**
+- 新建：`web/src/context/AuthContext.tsx`
 
-- [ ] **Step 1: Create web/src/context/AuthContext.tsx**
+- [ ] **步骤 1：创建 web/src/context/AuthContext.tsx**
 
 ```tsx
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
@@ -454,19 +454,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error('useAuth 必须在 AuthProvider 内部使用');
   return ctx;
 }
 ```
 
-- [ ] **Step 2: Verify no type errors**
+- [ ] **步骤 2：验证无类型错误**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/context/AuthContext.tsx
@@ -475,15 +475,15 @@ git commit -m "feat: add AuthContext with JWT token management"
 
 ---
 
-### Task 4: LoadingSpinner component
+### 任务 4：LoadingSpinner 组件
 
-**Files:**
-- Create: `web/src/components/LoadingSpinner.tsx`
+**涉及文件：**
+- 新建：`web/src/components/LoadingSpinner.tsx`
 
-- [ ] **Step 1: Create web/src/components/LoadingSpinner.tsx**
+- [ ] **步骤 1：创建 web/src/components/LoadingSpinner.tsx**
 
 ```tsx
-export default function LoadingSpinner({ label = 'Loading...' }: { label?: string }) {
+export default function LoadingSpinner({ label = '加载中...' }: { label?: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-12">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-indigo-600" />
@@ -493,14 +493,14 @@ export default function LoadingSpinner({ label = 'Loading...' }: { label?: strin
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/components/LoadingSpinner.tsx
@@ -509,12 +509,12 @@ git commit -m "feat: add LoadingSpinner component"
 
 ---
 
-### Task 5: App.tsx — Router with auth gating
+### 任务 5：App.tsx — 带认证门控的路由
 
-**Files:**
-- Modify: `web/src/App.tsx`
+**涉及文件：**
+- 修改：`web/src/App.tsx`
 
-- [ ] **Step 1: Rewrite web/src/App.tsx**
+- [ ] **步骤 1：重写 web/src/App.tsx**
 
 ```tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -529,7 +529,7 @@ import LibraryPage from './pages/LibraryPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
-  if (loading) return <LoadingSpinner label="Checking authentication..." />;
+  if (loading) return <LoadingSpinner label="正在检查认证状态..." />;
   if (!token) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
@@ -553,21 +553,21 @@ export default function App() {
           <Route path="preview/:id" element={<PreviewPage />} />
           <Route path="library" element={<LibraryPage />} />
         </Route>
-        <Route path="*" element={<div className="p-8 text-center text-gray-500">404 — Page not found</div>} />
+        <Route path="*" element={<div className="p-8 text-center text-gray-500">404 — 页面未找到</div>} />
       </Routes>
     </AuthProvider>
   );
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: errors about missing page/component modules — those are created in next tasks. Acceptable at this point.
+预期结果：报缺少页面/组件模块的错误——这些将在后续任务中创建，此时可以接受。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/App.tsx
@@ -576,12 +576,12 @@ git commit -m "feat: add router with protected workspace routes"
 
 ---
 
-### Task 6: LandingPage
+### 任务 6：LandingPage（首页）
 
-**Files:**
-- Create: `web/src/pages/LandingPage.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/LandingPage.tsx`
 
-- [ ] **Step 1: Create web/src/pages/LandingPage.tsx**
+- [ ] **步骤 1：创建 web/src/pages/LandingPage.tsx**
 
 ```tsx
 import { useAuth } from '../context/AuthContext';
@@ -597,11 +597,11 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-white px-4">
       <div className="max-w-lg text-center">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-          Image to SVG Converter
+          图片转 SVG 转换器
         </h1>
         <p className="mt-4 text-lg text-gray-600">
-          Convert raster images to clean vector SVG files. Drag, drop, download.
-          Free up to {20} conversions per day.
+          将位图图片转换为干净的矢量 SVG 文件。拖拽、放下、下载。
+          每天免费 {20} 次转换。
         </p>
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
           <button
@@ -611,7 +611,7 @@ export default function LandingPage() {
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
-            Login with GitHub
+            使用 GitHub 登录
           </button>
         </div>
       </div>
@@ -620,14 +620,14 @@ export default function LandingPage() {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no new errors beyond missing sibling modules.
+预期结果：除了缺少同级模块外，无新错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/pages/LandingPage.tsx
@@ -636,12 +636,12 @@ git commit -m "feat: add LandingPage with GitHub OAuth login"
 
 ---
 
-### Task 7: CallbackPage — capture OAuth JWT token
+### 任务 7：CallbackPage — 捕获 OAuth JWT token
 
-**Files:**
-- Create: `web/src/pages/CallbackPage.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/CallbackPage.tsx`
 
-- [ ] **Step 1: Create web/src/pages/CallbackPage.tsx**
+- [ ] **步骤 1：创建 web/src/pages/CallbackPage.tsx**
 
 ```tsx
 import { useEffect } from 'react';
@@ -662,18 +662,18 @@ export default function CallbackPage() {
     }
   }, [params, navigate]);
 
-  return <LoadingSpinner label="Signing you in..." />;
+  return <LoadingSpinner label="正在登录..." />;
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no new errors.
+预期结果：无新错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/pages/CallbackPage.tsx
@@ -682,12 +682,12 @@ git commit -m "feat: add OAuth callback page to capture JWT token"
 
 ---
 
-### Task 8: Layout component — sidebar + header
+### 任务 8：Layout 组件 — 侧边栏 + 头部
 
-**Files:**
-- Create: `web/src/components/Layout.tsx`
+**涉及文件：**
+- 新建：`web/src/components/Layout.tsx`
 
-- [ ] **Step 1: Create web/src/components/Layout.tsx**
+- [ ] **步骤 1：创建 web/src/components/Layout.tsx**
 
 ```tsx
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -706,19 +706,19 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
+      {/* 侧边栏 */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-100">
-          <h1 className="text-lg font-bold text-gray-900">SVG Converter</h1>
+          <h1 className="text-lg font-bold text-gray-900">SVG 转换器</h1>
           <p className="text-xs text-gray-500 mt-1 truncate">{userId}</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
           <NavLink to="/workspace/convert" className={linkClass('/workspace/convert')}>
-            + New Conversion
+            + 新建转换
           </NavLink>
           <NavLink to="/workspace/library" className={linkClass('/workspace/library')}>
-            My Library
+            我的库
           </NavLink>
         </nav>
 
@@ -727,12 +727,12 @@ export default function Layout() {
             onClick={logout}
             className="w-full text-left px-4 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
           >
-            Log out
+            退出登录
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* 主内容区 */}
       <main className="flex-1 p-8">
         <Outlet />
       </main>
@@ -741,14 +741,14 @@ export default function Layout() {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no new errors.
+预期结果：无新错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/components/Layout.tsx
@@ -757,12 +757,12 @@ git commit -m "feat: add Layout with sidebar navigation"
 
 ---
 
-### Task 9: DropZone component
+### 任务 9：DropZone 组件
 
-**Files:**
-- Create: `web/src/components/DropZone.tsx`
+**涉及文件：**
+- 新建：`web/src/components/DropZone.tsx`
 
-- [ ] **Step 1: Create web/src/components/DropZone.tsx**
+- [ ] **步骤 1：创建 web/src/components/DropZone.tsx**
 
 ```tsx
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react';
@@ -825,22 +825,22 @@ export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
           d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
       </svg>
       <p className="mt-4 text-sm text-gray-600">
-        <span className="font-semibold text-indigo-600">Click to upload</span> or drag and drop
+        <span className="font-semibold text-indigo-600">点击上传</span> 或拖拽文件到此处
       </p>
-      <p className="mt-1 text-xs text-gray-400">PNG, JPG, GIF, BMP, WEBP up to 10 MB</p>
+      <p className="mt-1 text-xs text-gray-400">支持 PNG、JPG、GIF、BMP、WEBP，最大 10 MB</p>
     </div>
   );
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/components/DropZone.tsx
@@ -849,12 +849,12 @@ git commit -m "feat: add DropZone drag-and-drop upload component"
 
 ---
 
-### Task 10: usePolling hook
+### 任务 10：usePolling hook
 
-**Files:**
-- Create: `web/src/hooks/usePolling.ts`
+**涉及文件：**
+- 新建：`web/src/hooks/usePolling.ts`
 
-- [ ] **Step 1: Create web/src/hooks/usePolling.ts**
+- [ ] **步骤 1：创建 web/src/hooks/usePolling.ts**
 
 ```typescript
 import { useEffect, useRef } from 'react';
@@ -876,14 +876,14 @@ export function usePolling(
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/hooks/usePolling.ts
@@ -892,12 +892,12 @@ git commit -m "feat: add usePolling generic hook"
 
 ---
 
-### Task 11: ConvertPage — upload + processing status
+### 任务 11：ConvertPage — 上传 + 处理状态
 
-**Files:**
-- Create: `web/src/pages/ConvertPage.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/ConvertPage.tsx`
 
-- [ ] **Step 1: Create web/src/pages/ConvertPage.tsx**
+- [ ] **步骤 1：创建 web/src/pages/ConvertPage.tsx**
 
 ```tsx
 import { useState, useCallback } from 'react';
@@ -936,7 +936,7 @@ export default function ConvertPage() {
       setConversionId(res.data.id);
       setStatus(res.data.status);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Upload failed';
+      const msg = err instanceof ApiError ? err.message : '上传失败';
       setError(msg);
     } finally {
       setUploading(false);
@@ -944,16 +944,16 @@ export default function ConvertPage() {
   }, []);
 
   if (uploading) {
-    return <LoadingSpinner label="Uploading..." />;
+    return <LoadingSpinner label="正在上传..." />;
   }
 
   if (status === 'pending' || status === 'processing') {
     return (
       <div className="max-w-xl mx-auto">
-        <h2 className="text-xl font-bold mb-4">Processing...</h2>
-        <LoadingSpinner label={`Status: ${status}`} />
+        <h2 className="text-xl font-bold mb-4">处理中...</h2>
+        <LoadingSpinner label={`状态：${status}`} />
         <p className="text-center text-sm text-gray-500 mt-4">
-          Your image is being converted to SVG. This may take a few seconds.
+          您的图片正在转换为 SVG，这可能需要几秒钟。
         </p>
       </div>
     );
@@ -961,7 +961,7 @@ export default function ConvertPage() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h2 className="text-xl font-bold mb-6">New Conversion</h2>
+      <h2 className="text-xl font-bold mb-6">新建转换</h2>
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
           {error}
@@ -973,14 +973,14 @@ export default function ConvertPage() {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/pages/ConvertPage.tsx
@@ -989,12 +989,12 @@ git commit -m "feat: add ConvertPage with upload and status polling"
 
 ---
 
-### Task 12: PreviewPage — SVG vs original comparison
+### 任务 12：PreviewPage — SVG 与原图对比
 
-**Files:**
-- Create: `web/src/pages/PreviewPage.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/PreviewPage.tsx`
 
-- [ ] **Step 1: Create web/src/pages/PreviewPage.tsx**
+- [ ] **步骤 1：创建 web/src/pages/PreviewPage.tsx**
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -1023,14 +1023,14 @@ export default function PreviewPage() {
         if (svg) setSvgContent(svg);
       })
       .catch(err => {
-        setError(err instanceof ApiError ? err.message : 'Failed to load');
+        setError(err instanceof ApiError ? err.message : '加载失败');
       })
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <LoadingSpinner label="Loading preview..." />;
+  if (loading) return <LoadingSpinner label="正在加载预览..." />;
   if (error) return <div className="text-red-600 text-center py-12">{error}</div>;
-  if (!conv) return <div className="text-gray-500 text-center py-12">Not found</div>;
+  if (!conv) return <div className="text-gray-500 text-center py-12">未找到</div>;
 
   const sizeReduction = conv.file_size_in > 0
     ? Math.round((1 - (conv.file_size_out || 0) / conv.file_size_in) * 100)
@@ -1039,7 +1039,7 @@ export default function PreviewPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Preview</h2>
+        <h2 className="text-xl font-bold">预览</h2>
         <div className="flex gap-3">
           {conv.status === 'completed' && (
             <a
@@ -1050,39 +1050,39 @@ export default function PreviewPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Download SVG
+              下载 SVG
             </a>
           )}
           <Link
             to="/workspace/library"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Back to Library
+            返回库
           </Link>
         </div>
       </div>
 
       {conv.status === 'failed' && (
         <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-          Conversion failed: {conv.error_message || 'Unknown error'}
+          转换失败：{conv.error_message || '未知错误'}
         </div>
       )}
 
-      {/* Comparison view */}
+      {/* 对比视图 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Original ({conv.format_in})</h3>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">原图（{conv.format_in}）</h3>
           <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
             <img
               src={conv.original_url}
-              alt="Original"
+              alt="原图"
               className="max-w-full max-h-full object-contain"
             />
           </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">SVG Result</h3>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">SVG 结果</h3>
           <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
             {svgContent ? (
               <div
@@ -1090,23 +1090,23 @@ export default function PreviewPage() {
                 dangerouslySetInnerHTML={{ __html: svgContent }}
               />
             ) : conv.status === 'pending' || conv.status === 'processing' ? (
-              <LoadingSpinner label="Processing..." />
+              <LoadingSpinner label="处理中..." />
             ) : (
-              <span className="text-gray-400 text-sm">Not available</span>
+              <span className="text-gray-400 text-sm">不可用</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Metadata */}
+      {/* 元数据 */}
       {conv.status === 'completed' && (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <MetaItem label="Input Size" value={formatBytes(conv.file_size_in)} />
-          <MetaItem label="Output Size" value={formatBytes(conv.file_size_out)} />
-          <MetaItem label="Reduction" value={`${sizeReduction}%`} />
-          <MetaItem label="Paths" value={String(conv.path_count)} />
-          <MetaItem label="Colors" value={String(conv.color_count)} />
-          <MetaItem label="Format" value={conv.format_in.toUpperCase()} />
+          <MetaItem label="输入大小" value={formatBytes(conv.file_size_in)} />
+          <MetaItem label="输出大小" value={formatBytes(conv.file_size_out)} />
+          <MetaItem label="压缩率" value={`${sizeReduction}%`} />
+          <MetaItem label="路径数" value={String(conv.path_count)} />
+          <MetaItem label="颜色数" value={String(conv.color_count)} />
+          <MetaItem label="格式" value={conv.format_in.toUpperCase()} />
         </div>
       )}
     </div>
@@ -1129,14 +1129,14 @@ function formatBytes(bytes: number): string {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/pages/PreviewPage.tsx
@@ -1145,12 +1145,12 @@ git commit -m "feat: add PreviewPage with SVG comparison and metadata"
 
 ---
 
-### Task 13: ConversionCard component
+### 任务 13：ConversionCard 组件
 
-**Files:**
-- Create: `web/src/components/ConversionCard.tsx`
+**涉及文件：**
+- 新建：`web/src/components/ConversionCard.tsx`
 
-- [ ] **Step 1: Create web/src/components/ConversionCard.tsx**
+- [ ] **步骤 1：创建 web/src/components/ConversionCard.tsx**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -1169,11 +1169,11 @@ function statusBadge(s: Conversion['status']) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins} 分钟前`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return `${hrs} 小时前`;
+  return `${Math.floor(hrs / 24)} 天前`;
 }
 
 export default function ConversionCard({ conv }: { conv: Conversion }) {
@@ -1203,14 +1203,14 @@ export default function ConversionCard({ conv }: { conv: Conversion }) {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/components/ConversionCard.tsx
@@ -1219,12 +1219,12 @@ git commit -m "feat: add ConversionCard component"
 
 ---
 
-### Task 14: LibraryPage — conversion history grid
+### 任务 14：LibraryPage — 转换历史网格
 
-**Files:**
-- Create: `web/src/pages/LibraryPage.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/LibraryPage.tsx`
 
-- [ ] **Step 1: Create web/src/pages/LibraryPage.tsx**
+- [ ] **步骤 1：创建 web/src/pages/LibraryPage.tsx**
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -1240,22 +1240,22 @@ export default function LibraryPage() {
   useEffect(() => {
     conversions.list(50, 0)
       .then(res => setItems(res.data))
-      .catch(err => setError(err instanceof ApiError ? err.message : 'Load failed'))
+      .catch(err => setError(err instanceof ApiError ? err.message : '加载失败'))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner label="Loading library..." />;
+  if (loading) return <LoadingSpinner label="正在加载库..." />;
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h2 className="text-xl font-bold mb-6">My Library</h2>
+      <h2 className="text-xl font-bold mb-6">我的库</h2>
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>
       )}
       {items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg">No conversions yet</p>
-          <p className="text-sm mt-1">Upload an image to get started.</p>
+          <p className="text-lg">暂无转换记录</p>
+          <p className="text-sm mt-1">上传一张图片开始使用吧。</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1269,14 +1269,14 @@ export default function LibraryPage() {
 }
 ```
 
-- [ ] **Step 2: Verify type check**
+- [ ] **步骤 2：验证类型检查**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add web/src/pages/LibraryPage.tsx
@@ -1285,64 +1285,64 @@ git commit -m "feat: add LibraryPage with conversion history grid"
 
 ---
 
-### Task 15: Go backend — redirect OAuth callbacks to frontend
+### 任务 15：Go 后端 — 将 OAuth 回调重定向到前端
 
-**Files:**
-- Modify: `server/internal/config/config.go`
-- Modify: `server/internal/handler/auth.go`
+**涉及文件：**
+- 修改：`server/internal/config/config.go`
+- 修改：`server/internal/handler/auth.go`
 
-- [ ] **Step 1: Add FrontendURL to config**
+- [ ] **步骤 1：在配置中添加 FrontendURL**
 
-In `server/internal/config/config.go`, add `FrontendURL` to the `Config` struct:
+在 `server/internal/config/config.go` 中，向 `Config` 结构体添加：
 
 ```go
 FrontendURL    string
 ```
 
-In `Load()`, add the field:
+在 `Load()` 中添加该字段：
 
 ```go
 FrontendURL:    envOr("FRONTEND_URL", "http://localhost:5173"),
 ```
 
-- [ ] **Step 2: Fix GithubCallback redirect**
+- [ ] **步骤 2：修复 GithubCallback 重定向**
 
-In `server/internal/handler/auth.go`, `GithubCallback` function, change:
-
-```go
-c.Redirect(http.StatusFound, "/callback?token="+token)
-```
-
-to:
-
-```go
-c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/callback?token="+token)
-```
-
-- [ ] **Step 3: Fix GoogleCallback redirect**
-
-In `server/internal/handler/auth.go`, `GoogleCallback` function, change:
+在 `server/internal/handler/auth.go` 的 `GithubCallback` 函数中，将：
 
 ```go
 c.Redirect(http.StatusFound, "/callback?token="+token)
 ```
 
-to:
+改为：
 
 ```go
 c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/callback?token="+token)
 ```
 
-- [ ] **Step 4: Rebuild Go API binary**
+- [ ] **步骤 3：修复 GoogleCallback 重定向**
+
+在 `server/internal/handler/auth.go` 的 `GoogleCallback` 函数中，将：
+
+```go
+c.Redirect(http.StatusFound, "/callback?token="+token)
+```
+
+改为：
+
+```go
+c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/callback?token="+token)
+```
+
+- [ ] **步骤 4：重新构建 Go API 二进制文件**
 
 ```bash
 cd /svg-project/server && go build -o api ./cmd/api/
 cd /svg-project && docker compose build api
 ```
 
-Expected: no errors.
+预期结果：无错误。
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add server/internal/config/config.go server/internal/handler/auth.go
@@ -1351,46 +1351,46 @@ git commit -m "fix: redirect OAuth callbacks to frontend URL"
 
 ---
 
-### Task 16: Full type check and end-to-end smoke test
+### 任务 16：完整类型检查和端到端冒烟测试
 
-**Files:**
-- None (verification only)
+**涉及文件：**
+- 无（仅验证）
 
-- [ ] **Step 1: TypeScript check — all pages exist and type correctly**
+- [ ] **步骤 1：TypeScript 检查 — 所有页面存在且类型正确**
 
 ```bash
 cd /svg-project/web && npx tsc --noEmit
 ```
-Expected: zero type errors (all modules now exist).
+预期结果：零类型错误（所有模块现已存在）。
 
-- [ ] **Step 2: Start API backend**
+- [ ] **步骤 2：启动 API 后端**
 
 ```bash
 cd /svg-project && docker compose up -d
 ```
 
-- [ ] **Step 3: Start Vite dev server**
+- [ ] **步骤 3：启动 Vite 开发服务器**
 
 ```bash
 cd /svg-project/web && npx vite --host 0.0.0.0 &
 ```
 
-- [ ] **Step 4: Verify landing page**
+- [ ] **步骤 4：验证首页**
 
 ```bash
-curl -s http://localhost:5173 | grep -o "SVG Converter"
+curl -s http://localhost:5173 | grep -o "SVG 转换器"
 ```
-Expected: "SVG Converter"
+预期结果："SVG 转换器"
 
-- [ ] **Step 5: Verify API proxy works**
+- [ ] **步骤 5：验证 API 代理工作正常**
 
 ```bash
 curl -s http://localhost:5173/api/v1/auth/me | head -1
 ```
-Expected: `{"error":{"code":"UNAUTHORIZED",...}}` (no token sent, but proves proxy works)
+预期结果：`{"error":{"code":"UNAUTHORIZED",...}}`（未发送 token，但证明了代理正常工作）
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：提交**
 
 ```bash
-echo "Frontend implementation complete. Start with: cd web && npm run dev"
+echo "前端实现完成。启动方式：cd web && npm run dev"
 ```

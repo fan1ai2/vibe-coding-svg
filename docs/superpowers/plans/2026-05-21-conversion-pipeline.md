@@ -1,53 +1,53 @@
-# Conversion Pipeline Implementation Plan
+# 转换管线实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化工作者:** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 按任务逐步实现此计划。步骤使用复选框 (`- [ ]`) 语法进行跟踪。
 
-**Goal:** Build the complete SVG conversion pipeline: upload, background processing via asynq, status tracking, and download.
+**目标：** 构建完整的 SVG 转换管线：上传、通过 asynq 进行后台处理、状态跟踪和下载。
 
-**Architecture:** API server handles uploads and stores originals in MinIO, then enqueues asynq tasks to Redis. A separate worker process picks up tasks, runs vtracer CLI for bitmap-to-SVG conversion, uploads results to MinIO, and updates conversion status. Quota is enforced per user per day (20 conversions).
+**架构：** API 服务器处理上传并将原始文件存储到 MinIO，然后将 asynq 任务入队到 Redis。一个独立的 worker 进程拾取任务，运行 vtracer CLI 进行位图转 SVG 的转换，将结果上传到 MinIO，并更新转换状态。每个用户每天有配额限制（20 次转换）。
 
-**Tech Stack:** Go 1.25, Gin, minio-go v7, asynq, vtracer CLI, PostgreSQL
+**技术栈：** Go 1.25、Gin、minio-go v7、asynq、vtracer CLI、PostgreSQL
 
-**File Map:**
-- Create: `server/internal/repo/conversion.go` — Conversion + quota DB ops
-- Create: `server/internal/service/storage.go` — MinIO upload/download wrapper
-- Create: `server/internal/service/conversion.go` — Enqueue/status/list biz logic
-- Create: `server/internal/handler/conversion.go` — HTTP handlers
-- Create: `server/internal/worker/converter.go` — CLI wrapper for vtracer
-- Create: `server/internal/worker/worker.go` — asynq task handler
-- Modify: `server/internal/router/router.go` — Add conversion routes
-- Modify: `server/cmd/worker/main.go` — Wire up asynq server
-- Modify: `server/go.mod` / `server/go.sum` — Add minio-go, asynq, uuid
+**文件清单：**
+- 新建：`server/internal/repo/conversion.go` — 转换记录和配额的数据库操作
+- 新建：`server/internal/service/storage.go` — MinIO 上传/下载封装
+- 新建：`server/internal/service/conversion.go` — 入队/状态/列表业务逻辑
+- 新建：`server/internal/handler/conversion.go` — HTTP 处理器
+- 新建：`server/internal/worker/converter.go` — vtracer CLI 封装
+- 新建：`server/internal/worker/worker.go` — asynq 任务处理器
+- 修改：`server/internal/router/router.go` — 添加转换路由
+- 修改：`server/cmd/worker/main.go` — 连接 asynq 服务器
+- 修改：`server/go.mod` / `server/go.sum` — 添加 minio-go、asynq、uuid
 
 ---
 
-### Task 1: Add Dependencies
+### 任务 1：添加依赖
 
-**Files:** Modify `server/go.mod`, `server/go.sum`
+**涉及文件：** 修改 `server/go.mod`、`server/go.sum`
 
-- [ ] **Step 1: Add minio-go, asynq, uuid**
+- [ ] **步骤 1：添加 minio-go、asynq、uuid**
 
 ```bash
 cd /svg-project/server && go get github.com/minio/minio-go/v7 github.com/hibiken/asynq github.com/google/uuid
 ```
 
-Expected: downloads modules, updates go.mod and go.sum.
+预期结果：下载模块，更新 go.mod 和 go.sum。
 
-- [ ] **Step 2: Verify go.mod has new deps**
+- [ ] **步骤 2：验证 go.mod 包含新依赖**
 
 ```bash
 cd /svg-project/server && grep -E "minio-go|asynq|uuid" go.mod
 ```
 
-Expected: three require lines for the new modules.
+预期结果：三个新模块的 require 行。
 
 ---
 
-### Task 2: Conversion Repo
+### 任务 2：转换记录仓库
 
-**Files:** Create `server/internal/repo/conversion.go`
+**涉及文件：** 新建 `server/internal/repo/conversion.go`
 
-- [ ] **Step 1: Write ConversionRepo**
+- [ ] **步骤 1：编写 ConversionRepo**
 
 ```go
 package repo
@@ -155,21 +155,21 @@ func (r *ConversionRepo) IncrementQuota(userID string) error {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/repo/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 3: Storage Service (MinIO)
+### 任务 3：存储服务（MinIO）
 
-**Files:** Create `server/internal/service/storage.go`
+**涉及文件：** 新建 `server/internal/service/storage.go`
 
-- [ ] **Step 1: Write Storage service**
+- [ ] **步骤 1：编写 Storage 服务**
 
 ```go
 package service
@@ -230,21 +230,21 @@ func (s *Storage) PresignedGetURL(bucket, key string, expiry time.Duration) (str
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/service/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 4: Conversion Service
+### 任务 4：转换服务
 
-**Files:** Create `server/internal/service/conversion.go`
+**涉及文件：** 新建 `server/internal/service/conversion.go`
 
-- [ ] **Step 1: Write ConversionService**
+- [ ] **步骤 1：编写 ConversionService**
 
 ```go
 package service
@@ -262,7 +262,7 @@ import (
 )
 
 const (
-	MaxDailyConversions = 20
+	MaxDailyConversions = 20    // 每日最大转换次数
 	BucketOriginals     = "originals"
 	BucketResults       = "results"
 )
@@ -358,7 +358,7 @@ func (s *ConversionService) GetDownload(id string) (io.ReadCloser, *model.Conver
 }
 ```
 
-Missing import: add `"io"` at the top. Full imports block:
+缺少导入：在顶部添加 `"io"`。完整导入块：
 
 ```go
 import (
@@ -375,21 +375,21 @@ import (
 )
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/service/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 5: Conversion Handlers
+### 任务 5：转换处理器
 
-**Files:** Create `server/internal/handler/conversion.go`
+**涉及文件：** 新建 `server/internal/handler/conversion.go`
 
-- [ ] **Step 1: Write ConversionHandler**
+- [ ] **步骤 1：编写 ConversionHandler**
 
 ```go
 package handler
@@ -491,7 +491,7 @@ func (h *ConversionHandler) Download(c *gin.Context) {
 }
 ```
 
-Note: the List handler references `[]*model.Conversion` in the nil check. Add the model import:
+注意：List 处理器在 nil 检查中引用了 `[]*model.Conversion`。添加 model 导入：
 
 ```go
 import (
@@ -506,23 +506,23 @@ import (
 )
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/handler/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 6: Update Router
+### 任务 6：更新路由
 
-**Files:** Modify `server/internal/router/router.go`
+**涉及文件：** 修改 `server/internal/router/router.go`
 
-- [ ] **Step 1: Add conversion routes**
+- [ ] **步骤 1：添加转换路由**
 
-Replace the entire file. Add new imports for repo, asynq, and use the new services:
+替换整个文件。添加 repo、asynq 的新导入，并使用新服务：
 
 ```go
 package router
@@ -592,21 +592,21 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/router/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 7: Worker Converter (CLI wrapper)
+### 任务 7：Worker 转换器（CLI 封装）
 
-**Files:** Create `server/internal/worker/converter.go`
+**涉及文件：** 新建 `server/internal/worker/converter.go`
 
-- [ ] **Step 1: Write vtracer CLI wrapper**
+- [ ] **步骤 1：编写 vtracer CLI 封装**
 
 ```go
 package worker
@@ -631,21 +631,21 @@ func CountSVGPaths(data []byte) int {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && mkdir -p internal/worker && go build ./internal/worker/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 8: Worker Task Handler
+### 任务 8：Worker 任务处理器
 
-**Files:** Create `server/internal/worker/worker.go`
+**涉及文件：** 新建 `server/internal/worker/worker.go`
 
-- [ ] **Step 1: Write asynq task handler**
+- [ ] **步骤 1：编写 asynq 任务处理器**
 
 ```go
 package worker
@@ -681,10 +681,12 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 		return fmt.Errorf("unmarshal: %w", err)
 	}
 
+	// 更新状态为处理中
 	if err := w.repo.UpdateStatus(payload.ConversionID, model.StatusProcessing, ""); err != nil {
 		return fmt.Errorf("update status to processing: %w", err)
 	}
 
+	// 从对象存储下载原始文件
 	reader, err := w.storage.Download(service.BucketOriginals, payload.OriginalKey)
 	if err != nil {
 		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "download failed: "+err.Error())
@@ -692,6 +694,7 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 	}
 	defer reader.Close()
 
+	// 创建临时文件
 	tmpDir := os.TempDir()
 	inPath := filepath.Join(tmpDir, payload.ConversionID+"_in."+payload.FormatIn)
 	outPath := filepath.Join(tmpDir, payload.ConversionID+"_out.svg")
@@ -710,17 +713,20 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 	defer os.Remove(inPath)
 	defer os.Remove(outPath)
 
+	// 执行转换
 	if err := ConvertRasterToSVG(inPath, outPath); err != nil {
 		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "conversion failed: "+err.Error())
 		return fmt.Errorf("convert: %w", err)
 	}
 
+	// 读取 SVG 结果
 	svgData, err := os.ReadFile(outPath)
 	if err != nil {
 		w.repo.UpdateStatus(payload.ConversionID, model.StatusFailed, "read result: "+err.Error())
 		return fmt.Errorf("read svg result: %w", err)
 	}
 
+	// 上传结果到对象存储
 	resultKey := payload.OriginalKey + ".svg"
 	resultFile, err := os.Open(outPath)
 	if err != nil {
@@ -735,6 +741,7 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 		return fmt.Errorf("upload svg result: %w", err)
 	}
 
+	// 统计并更新结果
 	pathCount := CountSVGPaths(svgData)
 	fileSizeOut := int64(len(svgData))
 
@@ -746,21 +753,21 @@ func (w *ConversionWorker) HandleProcessTask(ctx context.Context, t *asynq.Task)
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./internal/worker/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 9: Worker Main
+### 任务 9：Worker 主程序
 
-**Files:** Modify `server/cmd/worker/main.go`
+**涉及文件：** 修改 `server/cmd/worker/main.go`
 
-- [ ] **Step 1: Rewrite worker main.go**
+- [ ] **步骤 1：重写 worker main.go**
 
 ```go
 package main
@@ -780,6 +787,7 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// 连接数据库
 	db, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("database: %v", err)
@@ -790,6 +798,7 @@ func main() {
 	}
 	log.Println("connected to postgres")
 
+	// 初始化对象存储
 	storage, err := service.NewStorage(cfg)
 	if err != nil {
 		log.Fatalf("storage: %v", err)
@@ -804,6 +813,7 @@ func main() {
 	convRepo := repo.NewConversionRepo(db)
 	convWorker := worker.NewConversionWorker(cfg, convRepo, storage)
 
+	// 启动 asynq 服务器
 	srv := asynq.NewServer(
 		asynq.RedisClientOpt{Addr: cfg.RedisAddr},
 		asynq.Config{Concurrency: 4},
@@ -819,35 +829,35 @@ func main() {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：验证编译**
 
 ```bash
 cd /svg-project/server && go build ./cmd/worker/...
 ```
 
-Expected: compiles without errors.
+预期结果：编译通过，无错误。
 
 ---
 
-### Task 10: Full Build Verification
+### 任务 10：完整构建验证
 
-- [ ] **Step 1: Build both binaries**
+- [ ] **步骤 1：构建两个二进制文件**
 
 ```bash
 cd /svg-project/server && go build -o /dev/null ./cmd/api/... && go build -o /dev/null ./cmd/worker/...
 ```
 
-Expected: both compile successfully, no output on success.
+预期结果：两个都编译成功，成功时无输出。
 
-- [ ] **Step 2: Run go vet**
+- [ ] **步骤 2：运行 go vet**
 
 ```bash
 cd /svg-project/server && go vet ./...
 ```
 
-Expected: no warnings or errors.
+预期结果：无警告或错误。
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 cd /svg-project && git add server/go.mod server/go.sum \
