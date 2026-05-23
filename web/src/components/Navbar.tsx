@@ -33,6 +33,8 @@ export default function Navbar() {
             <input
               type="text"
               placeholder="搜索工具..."
+              aria-label="搜索工具"
+              readOnly
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-500 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
             />
           </div>
@@ -57,18 +59,23 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
+                  onKeyDown={(e) => e.key === 'Escape' && setMenuOpen(false)}
+                  aria-haspopup="true"
+                  aria-expanded={menuOpen}
+                  aria-label="用户菜单"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-600 hover:bg-amber-200 transition-colors"
                 >
                   {userId?.charAt(0).toUpperCase() ?? '?'}
                 </button>
                 {menuOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-100 bg-white shadow-lg z-20 py-1">
-                      <div className="px-4 py-2 text-xs text-gray-400 truncate">{userId}</div>
+                    <div className="fixed inset-0 z-10" aria-hidden="true" onClick={() => setMenuOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-100 bg-white shadow-lg z-20 py-1" role="menu">
+                      <div className="px-4 py-2 text-xs text-gray-400 truncate" role="menuitem">{userId}</div>
                       <div className="border-t border-gray-50" />
                       <button
                         onClick={handleLogout}
+                        role="menuitem"
                         className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         退出登录
