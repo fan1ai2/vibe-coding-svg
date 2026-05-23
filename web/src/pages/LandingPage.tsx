@@ -1,34 +1,105 @@
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import ToolCard from '../components/ToolCard';
+
+const tools = [
+  {
+    icon: (
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-12 w-12">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    title: 'SVG 转换',
+    description: '将位图图片快速转换为高质量矢量 SVG 文件，支持多种格式',
+    href: '/workspace/convert',
+    available: true,
+  },
+  {
+    icon: (
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-12 w-12">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z" />
+      </svg>
+    ),
+    title: '图标库',
+    description: '海量高质量 SVG 图标资源，支持在线编辑和自定义导出',
+    href: undefined,
+    available: false,
+  },
+  {
+    icon: (
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-12 w-12">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm-7.518-.267A8.25 8.25 0 1120.25 10.5M8.288 14.212A5.25 5.25 0 1117.25 10.5" />
+      </svg>
+    ),
+    title: '调色板',
+    description: '智能生成配色方案，支持渐变色提取和色彩对比度检测',
+    href: undefined,
+    available: false,
+  },
+  {
+    icon: (
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-12 w-12">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      </svg>
+    ),
+    title: '格式工厂',
+    description: '支持 SVG、PNG、WebP、PDF 等多种格式的批量互转',
+    href: undefined,
+    available: false,
+  },
+];
 
 export default function LandingPage() {
-  const { token, loading, login } = useAuth();
+  const { token, loading } = useAuth();
 
   if (loading) return null;
-  if (token) return <Navigate to="/workspace" replace />;
+  if (token) return <Navigate to="/workspace/convert" replace />;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-white px-4">
-      <div className="max-w-lg text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-          Image to SVG Converter
-        </h1>
-        <p className="mt-4 text-lg text-gray-600">
-          Convert raster images to clean vector SVG files. Drag, drop, download.
-          Free up to 20 conversions per day.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={login}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-          >
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-            Login with GitHub
-          </button>
+    <div className="min-h-screen bg-[#FFFDF7]">
+      {/* Hero 区 */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-amber-50/30" />
+        <div className="relative mx-auto max-w-6xl px-6 py-24 text-center sm:py-32">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+            创意设计资源，一站即达
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-500 leading-relaxed">
+            高质量的设计工具和资源平台，帮助你快速完成从位图到矢量、
+            从灵感到交付的完整设计链路。
+          </p>
+          <div className="mt-10">
+            <button
+              onClick={() => {
+                window.location.href = '/api/v1/auth/github/login';
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-8 py-3.5 text-base font-bold text-gray-900 shadow-md shadow-amber-200 transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-300"
+            >
+              开始免费使用
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* 工具卡片区 */}
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="mb-10 text-center">
+          <h2 className="text-2xl font-extrabold text-gray-900 sm:text-3xl">我们的工具</h2>
+          <p className="mt-3 text-gray-500">更多实用工具正在开发中，敬请期待</p>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {tools.map((tool) => (
+            <ToolCard key={tool.title} {...tool} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
