@@ -47,6 +47,8 @@ func (s *Storage) Download(bucket, key string) (io.ReadCloser, error) {
 	return s.client.GetObject(context.Background(), bucket, key, minio.GetObjectOptions{})
 }
 
+func (s *Storage) Client() *minio.Client { return s.client }
+
 func (s *Storage) PresignedGetURL(bucket, key string, expiry time.Duration) (string, error) {
 	u, err := s.client.PresignedGetObject(context.Background(), bucket, key, expiry, nil)
 	if err != nil {

@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/migrate"
@@ -39,10 +45,34 @@ func main() {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
-	// 设置路由并启动服务
+	// 设置路由
 	r := router.Setup(cfg, db)
-	log.Printf("API 服务器启动中，端口: :%s", cfg.Port)
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("服务器启动失败: %v", err)
+
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
 	}
+
+	// 在 goroutine 中启动服务
+	go func() {
+		log.Printf("API 服务器启动中，端口: :%s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("服务器启动失败: %v", err)
+		}
+	}()
+
+	// 等待退出信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("收到信号 %v，正在优雅关闭...", sig)
+
+	// 最多等待 30 秒让现有请求处理完成
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("服务器关闭失败: %v", err)
+	}
+	log.Println("服务器已安全关闭")
 }

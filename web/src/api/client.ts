@@ -37,12 +37,23 @@ export class ApiError extends Error {
 }
 
 // Auth
+// 用户模型
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+  provider: string;
+  created_at: string;
+};
+
+// 认证接口：获取当前用户完整信息、刷新 token
 export const auth = {
-  me: () => request<{ user_id: string }>('/auth/me'),
+  me: () => request<User>('/auth/me'),
   refresh: () => request<{ token: string }>('/auth/refresh', { method: 'POST' }),
 };
 
-// Conversions
+// 转换任务模型
 export type Conversion = {
   id: string;
   user_id: string;

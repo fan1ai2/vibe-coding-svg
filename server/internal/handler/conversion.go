@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"bytes"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +13,25 @@ import (
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/service"
 	"github.com/gin-gonic/gin"
 )
+
+// 允许上传的图片 MIME 类型白名单
+var allowedMIMETypes = map[string]bool{
+	"image/png":  true,
+	"image/jpeg": true,
+	"image/webp": true,
+	"image/bmp":  true,
+	"image/tiff": true,
+}
+
+// 允许的文件扩展名白名单
+var allowedExtensions = map[string]bool{
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".webp": true,
+	".bmp":  true,
+	".tiff": true,
+}
 
 // ConversionHandler 转换相关接口处理器
 type ConversionHandler struct {
@@ -50,14 +72,32 @@ func (h *ConversionHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	// 将转换任务加入队列
-	conv, err := h.svc.Enqueue(userID, file, header.Filename, header.Size)
+	// 校验文件扩展名
+	dotIdx := strings.LastIndex(header.Filename, ".")
+	if dotIdx < 0 || !allowedExtensions[strings.ToLower(header.Filename[dotIdx:])] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_TYPE", "message": "不支持的文件类型，仅支持 PNG、JPEG、WebP、BMP、TIFF"}})
+		return
+	}
+
+	// 校验 MIME 类型（读取文件前 512 字节检测真实类型）
+	buf := make([]byte, 512)
+	n, _ := file.Read(buf)
+	detectedType := http.DetectContentType(buf[:n])
+	if !allowedMIMETypes[detectedType] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_TYPE", "message": "文件内容不是支持的图片格式"}})
+		return
+	}
+
+	// 将转换任务加入队列（用 MultiReader 合并已读取的头部和剩余数据）
+	combinedReader := io.MultiReader(bytes.NewReader(buf[:n]), file)
+	conv, err := h.svc.Enqueue(userID, combinedReader, header.Filename, header.Size)
 	if err != nil {
 		if strings.Contains(err.Error(), "quota") {
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"code": "QUOTA_EXCEEDED", "message": err.Error()}})
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"code": "QUOTA_EXCEEDED", "message": "今日配额已用完"}})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "UPLOAD_FAILED", "message": err.Error()}})
+		log.Printf("[ERROR] upload enqueue user=%s: %v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "UPLOAD_FAILED", "message": "上传失败，请稍后重试"}})
 		return
 	}
 
@@ -79,7 +119,8 @@ func (h *ConversionHandler) List(c *gin.Context) {
 
 	list, err := h.svc.List(userID, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "LIST_FAILED", "message": err.Error()}})
+		log.Printf("[ERROR] list conversions user=%s: %v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "LIST_FAILED", "message": "获取列表失败"}})
 		return
 	}
 	// 确保返回空数组而非 null
@@ -103,7 +144,8 @@ func (h *ConversionHandler) Status(c *gin.Context) {
 
 	conv, err := h.svc.Get(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		log.Printf("[ERROR] get conversion id=%s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "DB_ERROR", "message": "查询失败"}})
 		return
 	}
 	// 验证记录存在且属于当前用户

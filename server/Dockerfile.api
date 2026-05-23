@@ -13,6 +13,7 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /api .
+COPY --from=builder /app/docs/ ./docs/
 COPY migrations/ ./migrations/
 EXPOSE 8080
 CMD ["./api"]

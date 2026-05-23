@@ -117,6 +117,11 @@ func (s *AuthService) getGithubUser(token string) (*GithubUser, error) {
 	return &user, json.NewDecoder(resp.Body).Decode(&user)
 }
 
+// FindByID 根据用户 ID 查找用户
+func (s *AuthService) FindByID(userID string) (*model.User, error) {
+	return s.userRepo.FindByID(userID)
+}
+
 // firstNonEmpty 返回第一个非空字符串
 func firstNonEmpty(a, b string) string {
 	if a != "" {

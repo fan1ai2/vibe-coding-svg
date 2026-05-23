@@ -40,12 +40,16 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	convSvc := service.NewConversionService(cfg, convRepo, storage, asynqClient)
 	convH := handler.NewConversionHandler(cfg, convSvc)
 
-	healthH := handler.NewHealthHandler(db)
+	healthH := handler.NewHealthHandler(db, cfg.RedisAddr, storage.Client())
 	fileH := handler.NewFileHandler(storage)
 
 	// 全局中间件
-	r.Use(middleware.CORS())
-	r.Use(middleware.RateLimit(100))
+	r.Use(middleware.CORS(cfg.FrontendURL))
+	r.Use(middleware.RequestLogging())
+	r.Use(middleware.RateLimit(cfg.RedisAddr, 100))
+
+	// Swagger 文档
+	r.Static("/docs", "./docs")
 
 	// 健康检查（无需认证）
 	r.GET("/health", healthH.Check)

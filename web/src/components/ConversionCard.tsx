@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Conversion } from '../api/client';
 
@@ -22,27 +21,22 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function thumbSrc(conv: Conversion): string | null {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  if (conv.thumbnail_url) {
-    return `/api/v1/files/originals/${conv.thumbnail_url}?token=${token}`;
-  }
-  return `/api/v1/files/originals/${conv.original_url}?token=${token}`;
-}
-
 export default function ConversionCard({ conv }: { conv: Conversion }) {
-  const imgSrc = useMemo(() => thumbSrc(conv), [conv.id]);
-
   return (
     <Link
       to={`/workspace/preview/${conv.id}`}
       className="block rounded-xl border border-gray-200 bg-white hover:shadow-md transition-shadow overflow-hidden"
     >
       <div className="aspect-video bg-gray-100 flex items-center justify-center">
-        {imgSrc ? (
-          <img src={imgSrc} alt="" className="w-full h-full object-cover" />
-        ) : (
+        <img
+          src={`/api/v1/files/originals/${conv.original_url}`}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        {!conv.original_url && (
           <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />

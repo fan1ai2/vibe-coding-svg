@@ -1,7 +1,12 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"log"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/service"
@@ -26,7 +31,17 @@ func NewAuthHandler(cfg *config.Config, as *service.AuthService) *AuthHandler {
 // @Success      302
 // @Router       /auth/github/login [get]
 func (h *AuthHandler) GithubLogin(c *gin.Context) {
-	url := "https://github.com/login/oauth/authorize?client_id=" + h.cfg.GithubClientID + "&scope=user:email"
+	state, err := generateState()
+	if err != nil {
+		log.Printf("[ERROR] generate oauth state: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "INTERNAL_ERROR", "message": "登录失败，请重试"}})
+		return
+	}
+
+	secure := strings.HasPrefix(h.cfg.FrontendURL, "https://")
+	c.SetCookie("oauth_state", state, int(10*time.Minute.Seconds()), "/api/v1/auth/github", "", secure, true)
+
+	url := "https://github.com/login/oauth/authorize?client_id=" + h.cfg.GithubClientID + "&scope=user:email&state=" + state
 	c.Redirect(http.StatusFound, url)
 }
 
@@ -41,15 +56,26 @@ func (h *AuthHandler) GithubLogin(c *gin.Context) {
 // @Router       /auth/github/callback [get]
 func (h *AuthHandler) GithubCallback(c *gin.Context) {
 	code := c.Query("code")
-	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "MISSING_CODE", "message": "缺少授权码"}})
+	state := c.Query("state")
+	if code == "" || state == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "MISSING_PARAMS", "message": "缺少授权参数"}})
 		return
 	}
+
+	cookieState, err := c.Cookie("oauth_state")
+	if err != nil || cookieState != state {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_STATE", "message": "授权验证失败，请重新登录"}})
+		return
+	}
+
+	// 清除 state cookie
+	c.SetCookie("oauth_state", "", -1, "/api/v1/auth/github", "", false, true)
 
 	// 用 GitHub 授权码换取用户信息
 	user, err := h.authService.ExchangeGithubCode(code)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"code": "OAUTH_FAILED", "message": err.Error()}})
+		log.Printf("[ERROR] github oauth exchange: %v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"code": "OAUTH_FAILED", "message": "GitHub 授权失败，请重试"}})
 		return
 	}
 
@@ -82,9 +108,22 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 // @Summary      获取当前用户信息
 // @Tags         auth
 // @Security     BearerAuth
-// @Success      200  {object}  object{user_id=string}
+// @Success      200  {object}  object{id=string,name=string,email=string,avatar_url=string,provider=string,created_at=string}
 // @Router       /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID := c.GetString("user_id")
-	c.JSON(http.StatusOK, gin.H{"user_id": userID})
+	user, err := h.authService.FindByID(userID)
+	if err != nil || user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"code": "USER_NOT_FOUND", "message": "用户不存在"}})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func generateState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
