@@ -120,6 +120,61 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// GuestLogin handles guest user creation/login.
+func (h *AuthHandler) GuestLogin(c *gin.Context) {
+	guestID, _ := c.Cookie("guest_id")
+
+	user, token, newGuestID, err := h.authService.GuestLogin(guestID)
+	if err != nil {
+		log.Printf("[ERROR] guest login: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"code": "INTERNAL_ERROR", "message": "登录失败，请重试"}})
+		return
+	}
+
+	secure := strings.HasPrefix(h.cfg.FrontendURL, "https://")
+	c.SetCookie("guest_id", newGuestID, int(365*24*time.Hour.Seconds()), "/", "", secure, true)
+
+	c.JSON(http.StatusOK, gin.H{"token": token, "user": user})
+}
+
+// EmailSendCode sends verification code to the given email.
+func (h *AuthHandler) EmailSendCode(c *gin.Context) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_PARAMS", "message": "请输入邮箱地址"}})
+		return
+	}
+
+	if err := h.authService.EmailSendCode(req.Email); err != nil {
+		log.Printf("[ERROR] email send code: %v", err)
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"code": "RATE_LIMITED", "message": err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// EmailVerify validates the code and returns a JWT.
+func (h *AuthHandler) EmailVerify(c *gin.Context) {
+	var req struct {
+		Email string `json:"email"`
+		Code  string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" || req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_PARAMS", "message": "请输入邮箱和验证码"}})
+		return
+	}
+
+	user, token, err := h.authService.EmailVerify(req.Email, req.Code)
+	if err != nil {
+		log.Printf("[ERROR] email verify: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"code": "INVALID_CODE", "message": err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token, "user": user})
+}
+
 func generateState() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
