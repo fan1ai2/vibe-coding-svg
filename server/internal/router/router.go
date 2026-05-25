@@ -3,6 +3,7 @@ package router
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/handler"
@@ -19,7 +20,18 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 
 	// --- 认证模块 ---
 	userRepo := repo.NewUserRepo(db)
-	authSvc := service.NewAuthService(cfg, userRepo)
+
+	// Start cleanup goroutine for expired verification codes
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			userRepo.CleanupExpiredCodes()
+		}
+	}()
+
+	emailSvc := service.NewEmailService(cfg)
+	authSvc := service.NewAuthService(cfg, userRepo, emailSvc)
 	authH := handler.NewAuthHandler(cfg, authSvc)
 
 	// --- 对象存储 ---
@@ -65,6 +77,14 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 		// 认证接口（部分公开）
 		auth := api.Group("/auth")
 		{
+			// Guest
+			auth.POST("/guest", authH.GuestLogin)
+
+			// Email
+			auth.POST("/email/send-code", authH.EmailSendCode)
+			auth.POST("/email/verify", authH.EmailVerify)
+
+			// GitHub (existing)
 			auth.GET("/github/login", authH.GithubLogin)
 			auth.GET("/github/callback", authH.GithubCallback)
 			auth.POST("/refresh", middleware.JWTAuth(cfg), authH.Refresh)

@@ -118,3 +118,18 @@ func (r *ConversionRepo) IncrementQuota(userID string, max int) (bool, error) {
 	n, _ := res.RowsAffected()
 	return n > 0, nil
 }
+
+func (r *ConversionRepo) FindProviderByID(userID string) (string, error) {
+	var provider string
+	err := r.db.QueryRow(`SELECT provider FROM users WHERE id=$1`, userID).Scan(&provider)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return provider, err
+}
+
+func (r *ConversionRepo) CountByUserID(userID string) (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM conversions WHERE user_id=$1`, userID).Scan(&count)
+	return count, err
+}

@@ -41,6 +41,21 @@ func NewConversionService(cfg *config.Config, r *repo.ConversionRepo, s *Storage
 
 // Enqueue 上传原始文件到对象存储，创建转换记录并将任务加入队列
 func (s *ConversionService) Enqueue(userID string, file io.Reader, filename string, size int64) (*model.Conversion, error) {
+	// Guest quota: lifetime 3 conversions max
+	provider, err := s.repo.FindProviderByID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("quota check: %w", err)
+	}
+	if provider == "guest" {
+		count, err := s.repo.CountByUserID(userID)
+		if err != nil {
+			return nil, fmt.Errorf("quota count: %w", err)
+		}
+		if count >= 3 {
+			return nil, fmt.Errorf("试用次数已用完（%d/3），请登录后继续使用", count)
+		}
+	}
+
 	// 解析文件扩展名确定输入格式
 	ext := filepath.Ext(filename)
 	if ext == "" {
