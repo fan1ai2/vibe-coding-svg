@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import EmailLoginModal from '../components/EmailLoginModal';
 import ToolCard from '../components/ToolCard';
 
 const tools = [
@@ -54,14 +56,15 @@ const tools = [
 ];
 
 export default function LandingPage() {
-  const { token, loading } = useAuth();
+  const { token, loading, guestLogin, onAuthSuccess } = useAuth();
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
   if (loading) return null;
   if (token) return <Navigate to="/workspace/convert" replace />;
 
   return (
     <div className="min-h-screen bg-[#FFFDF7]">
-      {/* Hero 区 */}
+      {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-amber-50/30" />
         <div className="relative mx-auto max-w-6xl px-6 py-24 text-center sm:py-32">
@@ -72,23 +75,42 @@ export default function LandingPage() {
             高质量的设计工具和资源平台，帮助你快速完成从位图到矢量、
             从灵感到交付的完整设计链路。
           </p>
-          <div className="mt-10">
+          <div className="mt-10 mx-auto max-w-xs space-y-3">
+            {/* Guest */}
             <button
-              onClick={() => {
-                window.location.href = '/api/v1/auth/github/login';
-              }}
-              className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-8 py-3.5 text-base font-bold text-gray-900 shadow-md shadow-amber-200 transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-300"
+              onClick={guestLogin}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-6 py-3.5 text-base font-bold text-gray-900 shadow-md shadow-amber-200 transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-300"
             >
               开始免费使用
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </button>
+
+            {/* Email */}
+            <button
+              onClick={() => setEmailModalOpen(true)}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-6 py-3.5 text-base font-semibold text-gray-700 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              邮箱登录 / 注册
+            </button>
+
+            {/* GitHub */}
+            <a
+              href="/api/v1/auth/github/login"
+              className="block text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              使用 GitHub 账号登录 →
+            </a>
           </div>
         </div>
       </section>
 
-      {/* 工具卡片区 */}
+      {/* Tools */}
       <section className="mx-auto max-w-6xl px-6 pb-24">
         <div className="mb-10 text-center">
           <h2 className="text-2xl font-extrabold text-gray-900 sm:text-3xl">我们的工具</h2>
@@ -100,6 +122,15 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      <EmailLoginModal
+        open={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        onSuccess={(token) => {
+          setEmailModalOpen(false);
+          onAuthSuccess(token);
+        }}
+      />
     </div>
   );
 }
