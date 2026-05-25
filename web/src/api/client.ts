@@ -37,20 +37,31 @@ export class ApiError extends Error {
 }
 
 // Auth
-// 用户模型
 export type User = {
   id: string;
-  name: string;
   email: string;
+  name: string;
   avatar_url: string;
   provider: string;
+  provider_id: string;
   created_at: string;
+  updated_at: string;
 };
 
-// 认证接口：获取当前用户完整信息、刷新 token
 export const auth = {
   me: () => request<User>('/auth/me'),
   refresh: () => request<{ token: string }>('/auth/refresh', { method: 'POST' }),
+  guest: () => request<{ token: string; user: User }>('/auth/guest', { method: 'POST' }),
+  sendCode: (email: string) =>
+    request<{ ok: boolean }>('/auth/email/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  verifyCode: (email: string, code: string) =>
+    request<{ token: string; user: User }>('/auth/email/verify', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    }),
 };
 
 // 转换任务模型
