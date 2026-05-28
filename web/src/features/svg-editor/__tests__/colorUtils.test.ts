@@ -49,7 +49,7 @@ describe('rgbToHsv', () => {
     expect(v).toBe(100)
   })
   it('converts [0, 0, 0] to [0, 0, 0]', () => {
-    const [h, s, v] = rgbToHsv(0, 0, 0)
+    const [, s, v] = rgbToHsv(0, 0, 0)
     expect(s).toBe(0)
     expect(v).toBe(0)
   })

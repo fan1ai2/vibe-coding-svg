@@ -27,6 +27,7 @@ export default function EditorPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [renderTick, setRenderTick] = useState(0)
+  void renderTick
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -44,11 +45,11 @@ export default function EditorPage() {
     setSelectedElement(el)
   }, [])
 
-  const handleApplyColor = useCallback(() => {
-    if (!selectedElement || !colorState) return
-    applyColor(colorState, selectedElement, currentColor, mode)
+  const applyAndTick = useCallback((el: SVGElement | null, color: string, m: ColorMode) => {
+    if (!el || !colorState) return
+    applyColor(colorState, el, color, m)
     setRenderTick(n => n + 1)
-  }, [selectedElement, currentColor, mode, colorState])
+  }, [colorState])
 
   const handleUndo = useCallback(() => {
     if (!colorState || colorState.undoStack.length === 0) return
@@ -137,15 +138,15 @@ export default function EditorPage() {
           <ColorPicker
             color={currentColor}
             alpha={alpha}
-            onColorChange={setCurrentColor}
+            onColorChange={(color) => {
+              setCurrentColor(color)
+              applyAndTick(selectedElement, color, mode)
+            }}
             onAlphaChange={setAlpha}
           />
           <PresetColors onSelect={(hex) => {
             setCurrentColor(hex)
-            if (selectedElement && colorState) {
-              applyColor(colorState, selectedElement, hex, mode)
-              setRenderTick(n => n + 1)
-            }
+            applyAndTick(selectedElement, hex, mode)
           }} />
           {colorState && (
             <ThemeReplacer

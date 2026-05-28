@@ -51,6 +51,12 @@ export default function Navbar() {
                 转换
               </Link>
               <Link
+                to="/workspace/editor"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                编辑器
+              </Link>
+              <Link
                 to="/workspace/library"
                 className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
               >

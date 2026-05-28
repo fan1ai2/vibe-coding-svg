@@ -10,6 +10,7 @@ import CallbackPage from './pages/CallbackPage';
 import ConvertPage from './pages/ConvertPage';
 import PreviewPage from './pages/PreviewPage';
 import LibraryPage from './pages/LibraryPage';
+import EditorPage from './pages/EditorPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="convert" element={<ConvertPage />} />
           <Route path="preview/:id" element={<PreviewPage />} />
           <Route path="library" element={<LibraryPage />} />
+          <Route path="editor" element={<EditorPage />} />
         </Route>
 
         {/* 404 */}

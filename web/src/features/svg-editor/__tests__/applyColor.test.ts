@@ -26,14 +26,14 @@ describe('applyColor', () => {
   })
 
   it('changes element fill color', () => {
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     applyColor(state, el, '#00FF00', 'fill')
     expect(el.getAttribute('fill')).toBe('#00FF00')
     expect(state.undoStack.length).toBe(1)
   })
 
   it('updates colorMap after apply', () => {
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     applyColor(state, el, '#00FF00', 'fill')
     expect(state.colorMap.get('#FF0000')?.size).toBe(1) // r2 still red
     expect(state.colorMap.get('#00FF00')?.size).toBe(1) // r1 now green
@@ -45,12 +45,12 @@ describe('undo / redo', () => {
 
   beforeEach(() => {
     state = createColorState(makeDoc())
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     applyColor(state, el, '#00FF00', 'fill')
   })
 
   it('undo restores previous color', () => {
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     undo(state)
     expect(el.getAttribute('fill')).toBe('#FF0000')
     expect(state.redoStack.length).toBe(1)
@@ -64,7 +64,7 @@ describe('undo / redo', () => {
   })
 
   it('undo then apply clears redo stack', () => {
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     undo(state)
     applyColor(state, el, '#000000', 'fill')
     expect(state.redoStack.length).toBe(0)
@@ -90,7 +90,7 @@ describe('themeReplace', () => {
 describe('MAX_UNDO', () => {
   it('discards oldest entry when stack exceeds 50', () => {
     const state = createColorState(makeDoc())
-    const el = state.doc.getElementById('r1')!
+    const el = state.doc.getElementById('r1')! as unknown as SVGElement
     for (let i = 0; i < 55; i++) {
       applyColor(state, el, `#00000${(i % 10)}`, 'fill')
     }
