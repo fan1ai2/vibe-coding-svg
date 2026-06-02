@@ -41,7 +41,7 @@ func (s *AiService) Generate(userID string, req GenerateRequest) (*GenerateRespo
 		return nil, fmt.Errorf("daily quota exceeded")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	candidates, err := s.provider.Generate(ctx, req.Prompt, req.Style)
