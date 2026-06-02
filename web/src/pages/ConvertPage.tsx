@@ -25,6 +25,8 @@ export default function ConvertPage() {
         setStatus(res.data.status);
         if (res.data.status === 'completed') {
           navigate(`/workspace/preview/${conversionId}`, { replace: true });
+        } else if (res.data.status === 'failed') {
+          setError(res.data.error_message || 'Conversion failed');
         }
       })
       .catch(() => {});
@@ -62,7 +64,7 @@ export default function ConvertPage() {
 
   if (status === 'pending' || status === 'processing') {
     return (
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <h2 className="text-xl font-bold mb-4">Processing...</h2>
         <LoadingSpinner label={`Status: ${status}`} />
         <p className="text-center text-sm text-gray-500 mt-4">
@@ -73,7 +75,7 @@ export default function ConvertPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4">
       <h2 className="text-xl font-bold">New Conversion</h2>
       {isGuest && (
         <GuestBanner remaining={remaining} onLogin={() => setShowLimitModal(true)} />

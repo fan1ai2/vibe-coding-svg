@@ -11,6 +11,9 @@ import ConvertPage from './pages/ConvertPage';
 import PreviewPage from './pages/PreviewPage';
 import LibraryPage from './pages/LibraryPage';
 import EditorPage from './pages/EditorPage';
+import IconLibraryPage from './pages/IconLibraryPage';
+import IconDetailPage from './pages/IconDetailPage';
+import AiGeneratePage from './pages/AiGeneratePage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -45,7 +48,12 @@ export default function App() {
           <Route path="preview/:id" element={<PreviewPage />} />
           <Route path="library" element={<LibraryPage />} />
           <Route path="editor" element={<EditorPage />} />
+          <Route path="ai-generate" element={<AiGeneratePage />} />
         </Route>
+
+        {/* 图标库（公开浏览） */}
+        <Route path="/icons" element={<><Navbar /><div className="min-h-screen bg-[#F9FAFB]"><div className="mx-auto max-w-6xl px-6 py-8"><IconLibraryPage /></div></div><Footer /></>} />
+        <Route path="/icons/:id" element={<><Navbar /><div className="min-h-screen bg-[#F9FAFB]"><div className="mx-auto max-w-6xl px-6 py-8"><IconDetailPage /></div></div><Footer /></>} />
 
         {/* 404 */}
         <Route path="*" element={<div className="p-8 text-center text-gray-500">404 — 页面未找到</div>} />
