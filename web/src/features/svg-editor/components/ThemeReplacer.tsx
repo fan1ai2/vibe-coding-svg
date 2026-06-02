@@ -26,7 +26,7 @@ export default function ThemeReplacer({ colorMap, targetColor, mode, onReplace }
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-gray-500">Theme Replace</label>
+      <label className="text-xs font-medium text-gray-500">主题替换</label>
       <select
         id="theme-source-color"
         className="w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
@@ -38,9 +38,9 @@ export default function ThemeReplacer({ colorMap, targetColor, mode, onReplace }
       <button
         onClick={handleReplace}
         disabled={colors.length === 0}
-        className="w-full py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 rounded-lg transition-colors"
+        className="w-full py-1.5 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 rounded-lg transition-colors"
       >
-        Replace All ({mode})
+        全部替换 ({mode === 'fill' ? '填充' : '描边'})
       </button>
     </div>
   )
