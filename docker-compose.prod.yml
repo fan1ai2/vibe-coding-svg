@@ -1,3 +1,10 @@
+# 生产部署 compose —— 使用预构建镜像，不在服务器上编译
+# 用法:
+#   本地:  make build    # 构建所有镜像
+#   本地:  make push     # 推送到仓库
+#   服务器: docker compose -f docker-compose.prod.yml pull
+#   服务器: docker compose -f docker-compose.prod.yml up -d
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -5,10 +12,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -16,8 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -29,19 +34,24 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     volumes:
       - miniodata:/data
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-change-me-neo4j}
+    volumes:
+      - neo4jdata:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      retries: 10
 
   api:
-    image: ${REGISTRY:-}svg-api:latest
-    build:
-      context: ./server
-      dockerfile: Dockerfile.api
-    ports:
-      - "8080:8080"
+    image: ${REGISTRY}/svg-api:latest
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_ADDR: ${REDIS_ADDR}
@@ -52,6 +62,10 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-change-me-neo4j}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o}
       PORT: ${PORT}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -59,10 +73,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-change-me-neo4j}
-      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
-      AI_API_KEY: ${AI_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-gpt-4o}
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,10 +85,7 @@ services:
         condition: service_healthy
 
   worker:
-    image: ${REGISTRY:-}svg-worker:latest
-    build:
-      context: ./server
-      dockerfile: Dockerfile.worker
+    image: ${REGISTRY}/svg-worker:latest
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_ADDR: ${REDIS_ADDR}
@@ -89,6 +97,7 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-change-me-neo4j}
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,26 +107,10 @@ services:
         condition: service_started
 
   web:
-    image: ${REGISTRY:-}svg-web:latest
-    build:
-      context: ./web
-      dockerfile: Dockerfile.web
+    image: ${REGISTRY}/svg-web:latest
+    restart: unless-stopped
     depends_on:
       - api
-
-  neo4j:
-    image: neo4j:5-community
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    environment:
-      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-change-me-neo4j}
-    volumes:
-      - neo4jdata:/data
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
-      interval: 10s
-      retries: 10
 
   caddy:
     image: caddy:2-alpine
@@ -129,6 +122,7 @@ services:
       - caddydata:/data
     environment:
       DOMAIN: ${DOMAIN:-}
+    restart: unless-stopped
     depends_on:
       - api
       - web
