@@ -42,7 +42,7 @@ export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
       onClick={() => inputRef.current?.click()}
       className={`
         relative cursor-pointer rounded-2xl border-2 border-dashed p-12 text-center transition-colors
-        ${dragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-gray-400'}
+        ${dragging ? 'border-amber-500 bg-amber-50' : 'border-gray-300 hover:border-gray-400'}
         ${disabled ? 'opacity-50 pointer-events-none' : ''}
       `}
     >
@@ -58,7 +58,7 @@ export default function DropZone({ onFile, disabled = false }: DropZoneProps) {
           d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
       </svg>
       <p className="mt-4 text-sm text-gray-600">
-        <span className="font-semibold text-indigo-600">Click to upload</span> or drag and drop
+        <span className="font-semibold text-amber-600">Click to upload</span> or drag and drop
       </p>
       <p className="mt-1 text-xs text-gray-400">PNG, JPG, GIF, BMP, WEBP up to 10 MB</p>
     </div>
