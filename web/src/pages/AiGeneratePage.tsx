@@ -58,18 +58,28 @@ export default function AiGeneratePage() {
   }
 
   const handleOpenInEditor = useCallback((candidate: IconCandidate) => {
+    if (!candidate.svg_content) {
+      setError('SVG 内容为空，无法打开编辑器')
+      return
+    }
     sessionStorage.setItem('editor:pendingSvg', candidate.svg_content)
     navigate('/workspace/editor')
   }, [navigate])
 
   const handlePublish = useCallback(async (name: string, tags: { name: string; type: string }[], theme: string, isPublic: boolean) => {
-    if (!token || !publishTarget) return
+    if (!token) {
+      setError('登录已过期，请重新登录')
+      navigate('/')
+      return
+    }
+    if (!publishTarget) return
     try {
       const res = await icons.create({ name, svg_content: publishTarget.svg_content, is_public: isPublic, tags, theme })
       setPublishTarget(null)
       showToast(`已发布到图标库`)
       setTimeout(() => navigate(`/icons/${res.data.id}`), 1000)
-    } catch {
+    } catch (err) {
+      console.error('Publish failed:', err)
       showToast('发布失败，请重试')
     }
   }, [token, publishTarget, navigate, showToast])

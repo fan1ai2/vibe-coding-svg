@@ -1,4 +1,4 @@
-/** Convert HSV (h: 0-360, s: 0-100, v: 0-100) to RGB (0-255 each) */
+/** 将 HSV（h: 0-360, s: 0-100, v: 0-100）转换为 RGB（各 0-255）*/
 export function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const sNorm = s / 100
   const vNorm = v / 100
@@ -21,13 +21,13 @@ export function hsvToRgb(h: number, s: number, v: number): [number, number, numb
   ]
 }
 
-/** Convert RGB (0-255 each) to HEX string (#RRGGBB) */
+/** 将 RGB（各 0-255）转换为 HEX 字符串（#RRGGBB）*/
 export function rgbToHex(r: number, g: number, b: number): string {
   const toHex = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0').toUpperCase()
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
-/** Parse HEX (#RRGGBB or #RGB) to RGB, returns null for invalid input */
+/** 解析 HEX（#RRGGBB 或 #RGB）为 RGB，无效输入返回 null */
 export function hexToRgb(hex: string): [number, number, number] | null {
   const match = hex.match(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/)
   if (!match) return null
@@ -40,7 +40,7 @@ export function hexToRgb(hex: string): [number, number, number] | null {
   ]
 }
 
-/** Convert RGB (0-255 each) to HSV (h: 0-360, s: 0-100, v: 0-100) */
+/** 将 RGB（各 0-255）转换为 HSV（h: 0-360, s: 0-100, v: 0-100）*/
 export function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   const rNorm = r / 255
   const gNorm = g / 255

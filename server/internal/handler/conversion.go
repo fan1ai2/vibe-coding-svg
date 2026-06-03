@@ -92,8 +92,8 @@ func (h *ConversionHandler) Upload(c *gin.Context) {
 	combinedReader := io.MultiReader(bytes.NewReader(buf[:n]), file)
 	conv, err := h.svc.Enqueue(userID, combinedReader, header.Filename, header.Size)
 	if err != nil {
-		if strings.Contains(err.Error(), "quota") {
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"code": "QUOTA_EXCEEDED", "message": "今日配额已用完"}})
+		if strings.Contains(err.Error(), "quota") || strings.Contains(err.Error(), "配额") || strings.Contains(err.Error(), "试用") {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"code": "QUOTA_EXCEEDED", "message": err.Error()}})
 			return
 		}
 		log.Printf("[ERROR] upload enqueue user=%s: %v", userID, err)

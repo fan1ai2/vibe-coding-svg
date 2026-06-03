@@ -32,7 +32,7 @@ func (b *PromptBuilder) BuildSystemPrompt(style string) string {
 		defaultColor = "#F59E0B"
 	}
 	sb.WriteString("Generate SVG icons with these EXACT specifications:\n")
-	sb.WriteString("- <svg> must have viewBox=\"0 0 24 24\" and NO width/height attributes\n")
+	sb.WriteString("- <svg> must have xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" and NO width/height attributes\n")
 	if style == "line" {
 		sb.WriteString(fmt.Sprintf("- Line style icons: fill=\"none\", stroke=\"%s\", stroke-width=\"2\", stroke-linecap=\"round\", stroke-linejoin=\"round\"\n", defaultColor))
 	} else {

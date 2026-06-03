@@ -35,16 +35,17 @@ export default function SvgCanvas({ svg, selectedElement, onSelect, onError, onS
         }
       }
 
+      onSvgLoaded(svgString, doc)
+
       if (containerRef.current) {
         containerRef.current.innerHTML = ''
+        doc.documentElement.setAttribute('data-editor-svg', '')
         containerRef.current.appendChild(doc.documentElement)
-        // inject selection highlight style
         const style = doc.createElement('style')
         style.textContent = '[data-selected]{outline:2px solid #3B82F6;outline-offset:1px}'
-        doc.documentElement.insertBefore(style, doc.documentElement.firstChild)
+        const svgEl = containerRef.current.querySelector('[data-editor-svg]')!
+        svgEl.insertBefore(style, svgEl.firstChild)
       }
-
-      onSvgLoaded(svgString, doc)
     } catch {
       onError('SVG 格式无效')
     }

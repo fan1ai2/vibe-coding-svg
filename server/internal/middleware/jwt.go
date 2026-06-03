@@ -33,3 +33,24 @@ func JWTAuth(cfg *config.Config) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// OptionalJWTAuth extracts user_id from Authorization header if present,
+// but does not reject requests without a token.
+func OptionalJWTAuth(cfg *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.GetHeader("Authorization")
+		if header == "" || !strings.HasPrefix(header, "Bearer ") {
+			c.Next()
+			return
+		}
+		tokenStr := strings.TrimPrefix(header, "Bearer ")
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		if err == nil && token.Valid {
+			claims := token.Claims.(jwt.MapClaims)
+			c.Set("user_id", claims["sub"])
+		}
+		c.Next()
+	}
+}

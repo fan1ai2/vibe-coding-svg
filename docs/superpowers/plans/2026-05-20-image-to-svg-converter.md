@@ -1,21 +1,21 @@
-# Image-to-SVG Converter Implementation Plan
+# Image-to-SVG Converter 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化工作者：** 必需子技能： 使用 superpowers:subagent-driven-development (推荐) 或 superpowers:executing-plans 按任务逐步实现此计划. 步骤使用复选框 (`- [ ]`) 语法进行跟踪.
 
-**Goal:** Build a web app where users upload raster images and get SVG vector conversions, with personal library history.
+**目标：** Build a web app where users upload raster images and get SVG vector conversions, with personal library history.
 
-**Architecture:** Go API server (gin) + Go worker (goroutine pool consuming Redis jobs) + React SPA (Vite/TypeScript/Tailwind). PostgreSQL for data, Redis for job queue, MinIO for file storage. Frontend polls API for conversion status.
+**架构：** Go API server (gin) + Go worker (goroutine pool consuming Redis jobs) + React SPA (Vite/TypeScript/Tailwind). PostgreSQL for data, Redis for job queue, MinIO for file storage. Frontend polls API for conversion status.
 
-**Tech Stack:** Go 1.22+, gin, golang-jwt, go-redis, minio-go, golang-migrate, React 18, Vite, TypeScript, Tailwind CSS, React Router v6, axios
+**技术栈：** Go 1.22+, gin, golang-jwt, go-redis, minio-go, golang-migrate, React 18, Vite, TypeScript, Tailwind CSS, React Router v6, axios
 
 ---
 
-### Task 1: Docker Compose Infrastructure
+### 任务 1： Docker Compose Infrastructure
 
-**Files:**
-- Create: `docker-compose.yml`
+**涉及文件：**
+- 新建：`docker-compose.yml`
 
-- [ ] **Step 1: Write docker-compose.yml**
+- [ ] **步骤 1：write docker-compose.yml**
 
 ```yaml
 version: "3.9"
@@ -53,12 +53,12 @@ volumes:
   miniodata:
 ```
 
-- [ ] **Step 2: Start infrastructure**
+- [ ] **步骤 2：start infrastructure**
 
 Run: `docker-compose up -d`
-Expected: three containers running (verify with `docker-compose ps`)
+预期结果： three containers running (verify with `docker-compose ps`)
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add docker-compose.yml
@@ -67,20 +67,20 @@ git commit -m "feat: add docker-compose for postgres, redis, minio"
 
 ---
 
-### Task 2: Go Module & Project Scaffolding
+### 任务 2： Go Module & Project Scaffolding
 
-**Files:**
-- Create: `server/go.mod`
-- Create: `server/cmd/api/main.go` (skeleton)
-- Create: `server/cmd/worker/main.go` (skeleton)
-- Create: `server/internal/config/config.go`
+**涉及文件：**
+- 新建：`server/go.mod`
+- 新建：`server/cmd/api/main.go` (skeleton)
+- 新建：`server/cmd/worker/main.go` (skeleton)
+- 新建：`server/internal/config/config.go`
 
-- [ ] **Step 1: Initialize Go module**
+- [ ] **步骤 1：initialize Go module**
 
 Run: `cd server && go mod init github.com/fan1ai2/vibe-coding-svg/server`
-Expected: `go.mod` created
+预期结果： `go.mod` created
 
-- [ ] **Step 2: Write config package**
+- [ ] **步骤 2：write config package**
 
 ```go
 // server/internal/config/config.go
@@ -130,7 +130,7 @@ func envOr(key, fallback string) string {
 }
 ```
 
-- [ ] **Step 3: Write API entry point skeleton**
+- [ ] **步骤 3：write API entry point skeleton**
 
 ```go
 // server/cmd/api/main.go
@@ -147,7 +147,7 @@ func main() {
 }
 ```
 
-- [ ] **Step 4: Write worker entry point skeleton**
+- [ ] **步骤 4：write worker entry point skeleton**
 
 ```go
 // server/cmd/worker/main.go
@@ -164,12 +164,12 @@ func main() {
 }
 ```
 
-- [ ] **Step 5: Install initial dependencies**
+- [ ] **步骤 5：install initial dependencies**
 
 Run: `cd server && go get github.com/gin-gonic/gin github.com/golang-jwt/jwt/v5 github.com/redis/go-redis/v9 github.com/minio/minio-go/v7 github.com/golang-migrate/migrate/v4 github.com/lib/pq github.com/google/uuid`
-Expected: `go.sum` populated
+预期结果： `go.sum` populated
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：commit**
 
 ```bash
 git add server/
@@ -178,17 +178,17 @@ git commit -m "feat: scaffold Go module with config and entry points"
 
 ---
 
-### Task 3: Database Migrations
+### 任务 3： Database Migrations
 
-**Files:**
-- Create: `server/migrations/001_create_users.up.sql`
-- Create: `server/migrations/001_create_users.down.sql`
-- Create: `server/migrations/002_create_conversions.up.sql`
-- Create: `server/migrations/002_create_conversions.down.sql`
-- Create: `server/migrations/003_create_quotas.up.sql`
-- Create: `server/migrations/003_create_quotas.down.sql`
+**涉及文件：**
+- 新建：`server/migrations/001_create_users.up.sql`
+- 新建：`server/migrations/001_create_users.down.sql`
+- 新建：`server/migrations/002_create_conversions.up.sql`
+- 新建：`server/migrations/002_create_conversions.down.sql`
+- 新建：`server/migrations/003_create_quotas.up.sql`
+- 新建：`server/migrations/003_create_quotas.down.sql`
 
-- [ ] **Step 1: Write users migration up**
+- [ ] **步骤 1：write users migration up**
 
 ```sql
 -- server/migrations/001_create_users.up.sql
@@ -207,14 +207,14 @@ CREATE TABLE users (
 );
 ```
 
-- [ ] **Step 2: Write users migration down**
+- [ ] **步骤 2：write users migration down**
 
 ```sql
 -- server/migrations/001_create_users.down.sql
 DROP TABLE IF EXISTS users;
 ```
 
-- [ ] **Step 3: Write conversions migration up**
+- [ ] **步骤 3：write conversions migration up**
 
 ```sql
 -- server/migrations/002_create_conversions.up.sql
@@ -239,14 +239,14 @@ CREATE INDEX idx_conversions_user_status ON conversions(user_id, status);
 CREATE INDEX idx_conversions_created ON conversions(created_at DESC);
 ```
 
-- [ ] **Step 4: Write conversions migration down**
+- [ ] **步骤 4：write conversions migration down**
 
 ```sql
 -- server/migrations/002_create_conversions.down.sql
 DROP TABLE IF EXISTS conversions;
 ```
 
-- [ ] **Step 5: Write quotas migration up**
+- [ ] **步骤 5：write quotas migration up**
 
 ```sql
 -- server/migrations/003_create_quotas.up.sql
@@ -259,19 +259,19 @@ CREATE TABLE daily_quotas (
 );
 ```
 
-- [ ] **Step 6: Write quotas migration down**
+- [ ] **步骤 6：write quotas migration down**
 
 ```sql
 -- server/migrations/003_create_quotas.down.sql
 DROP TABLE IF EXISTS daily_quotas;
 ```
 
-- [ ] **Step 7: Run migrations**
+- [ ] **步骤 7：run migrations**
 
 Run: `cd server && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest && migrate -path migrations -database "postgres://svguser:svgpass@localhost:5432/svgconverter?sslmode=disable" up`
-Expected: "3/u 001_create_users ..." (three migrations applied)
+预期结果： "3/u 001_create_users ..." (three migrations applied)
 
-- [ ] **Step 8: Commit**
+- [ ] **步骤 8：commit**
 
 ```bash
 git add server/migrations/
@@ -280,14 +280,14 @@ git commit -m "feat: add database migrations for users, conversions, quotas"
 
 ---
 
-### Task 4: Data Models
+### 任务 4： Data Models
 
-**Files:**
-- Create: `server/internal/model/user.go`
-- Create: `server/internal/model/conversion.go`
-- Create: `server/internal/model/quota.go`
+**涉及文件：**
+- 新建：`server/internal/model/user.go`
+- 新建：`server/internal/model/conversion.go`
+- 新建：`server/internal/model/quota.go`
 
-- [ ] **Step 1: Write user model**
+- [ ] **步骤 1：write user model**
 
 ```go
 // server/internal/model/user.go
@@ -307,7 +307,7 @@ type User struct {
 }
 ```
 
-- [ ] **Step 2: Write conversion model**
+- [ ] **步骤 2：write conversion model**
 
 ```go
 // server/internal/model/conversion.go
@@ -340,7 +340,7 @@ const (
 )
 ```
 
-- [ ] **Step 3: Write quota model**
+- [ ] **步骤 3：write quota model**
 
 ```go
 // server/internal/model/quota.go
@@ -356,7 +356,7 @@ type DailyQuota struct {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add server/internal/model/
@@ -365,12 +365,12 @@ git commit -m "feat: add data models for user, conversion, quota"
 
 ---
 
-### Task 5: User Repository
+### 任务 5： User Repository
 
-**Files:**
-- Create: `server/internal/repo/user.go`
+**涉及文件：**
+- 新建：`server/internal/repo/user.go`
 
-- [ ] **Step 1: Write user repository**
+- [ ] **步骤 1：write user repository**
 
 ```go
 // server/internal/repo/user.go
@@ -419,7 +419,7 @@ func (r *UserRepo) FindByID(id string) (*model.User, error) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add server/internal/repo/
@@ -428,12 +428,12 @@ git commit -m "feat: add user repository"
 
 ---
 
-### Task 6: Auth Service
+### 任务 6： Auth Service
 
-**Files:**
-- Create: `server/internal/service/auth.go`
+**涉及文件：**
+- 新建：`server/internal/service/auth.go`
 
-- [ ] **Step 1: Write auth service**
+- [ ] **步骤 1：write auth service**
 
 ```go
 // server/internal/service/auth.go
@@ -612,12 +612,12 @@ func firstNonEmpty(a, b string) string {
 }
 ```
 
-- [ ] **Step 2: Install missing dependency**
+- [ ] **步骤 2：install missing dependency**
 
 Run: `cd server && go mod tidy`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/service/auth.go
@@ -626,12 +626,12 @@ git commit -m "feat: add auth service with GitHub and Google OAuth"
 
 ---
 
-### Task 7: Auth Handlers
+### 任务 7： Auth Handlers
 
-**Files:**
-- Create: `server/internal/handler/auth.go`
+**涉及文件：**
+- 新建：`server/internal/handler/auth.go`
 
-- [ ] **Step 1: Write auth handlers**
+- [ ] **步骤 1：write auth handlers**
 
 ```go
 // server/internal/handler/auth.go
@@ -705,7 +705,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 }
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
-	// JWT refresh — for MVP, just re-issue the same token
+	// JWT refresh —— for MVP, just re-issue the same token
 	userID := c.GetString("user_id")
 	token, err := h.authService.GenerateJWT(userID)
 	if err != nil {
@@ -721,7 +721,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add server/internal/handler/auth.go
@@ -730,14 +730,14 @@ git commit -m "feat: add auth HTTP handlers"
 
 ---
 
-### Task 8: Middleware
+### 任务 8： Middleware
 
-**Files:**
-- Create: `server/internal/middleware/jwt.go`
-- Create: `server/internal/middleware/cors.go`
-- Create: `server/internal/middleware/ratelimit.go`
+**涉及文件：**
+- 新建：`server/internal/middleware/jwt.go`
+- 新建：`server/internal/middleware/cors.go`
+- 新建：`server/internal/middleware/ratelimit.go`
 
-- [ ] **Step 1: Write JWT middleware**
+- [ ] **步骤 1：write JWT middleware**
 
 ```go
 // server/internal/middleware/jwt.go
@@ -778,7 +778,7 @@ func JWTAuth(cfg *config.Config) gin.HandlerFunc {
 }
 ```
 
-- [ ] **Step 2: Write CORS middleware**
+- [ ] **步骤 2：write CORS middleware**
 
 ```go
 // server/internal/middleware/cors.go
@@ -800,7 +800,7 @@ func CORS() gin.HandlerFunc {
 }
 ```
 
-- [ ] **Step 3: Write rate limit middleware**
+- [ ] **步骤 3：write rate limit middleware**
 
 ```go
 // server/internal/middleware/ratelimit.go
@@ -844,7 +844,7 @@ func RateLimit(maxPerMin int) gin.HandlerFunc {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add server/internal/middleware/
@@ -853,13 +853,13 @@ git commit -m "feat: add JWT, CORS, and rate limit middleware"
 
 ---
 
-### Task 9: Router & API Main
+### 任务 9： Router & API Main
 
-**Files:**
-- Create: `server/internal/router/router.go`
-- Modify: `server/cmd/api/main.go`
+**涉及文件：**
+- 新建：`server/internal/router/router.go`
+- 修改：`server/cmd/api/main.go`
 
-- [ ] **Step 1: Write router**
+- [ ] **步骤 1：write router**
 
 ```go
 // server/internal/router/router.go
@@ -903,7 +903,7 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 }
 ```
 
-- [ ] **Step 2: Update API main.go**
+- [ ] **步骤 2：update API main.go**
 
 ```go
 // server/cmd/api/main.go
@@ -939,12 +939,12 @@ func main() {
 }
 ```
 
-- [ ] **Step 3: Verify it compiles**
+- [ ] **步骤 3：verify it compiles**
 
 Run: `cd server && go build ./cmd/api/...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add server/internal/router/ server/cmd/api/main.go
@@ -953,12 +953,12 @@ git commit -m "feat: wire up router with auth routes and API main"
 
 ---
 
-### Task 10: Storage Service (MinIO)
+### 任务 10： Storage Service (MinIO)
 
-**Files:**
-- Create: `server/internal/service/storage.go`
+**涉及文件：**
+- 新建：`server/internal/service/storage.go`
 
-- [ ] **Step 1: Write storage service**
+- [ ] **步骤 1：write storage service**
 
 ```go
 // server/internal/service/storage.go
@@ -1016,7 +1016,7 @@ func (s *StorageService) Download(ctx context.Context, key string) (io.ReadClose
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add server/internal/service/storage.go
@@ -1025,14 +1025,14 @@ git commit -m "feat: add MinIO storage service"
 
 ---
 
-### Task 11: Conversion Repository & Service
+### 任务 11： Conversion Repository & Service
 
-**Files:**
-- Create: `server/internal/repo/conversion.go`
-- Create: `server/internal/repo/quota.go`
-- Create: `server/internal/service/conversion.go`
+**涉及文件：**
+- 新建：`server/internal/repo/conversion.go`
+- 新建：`server/internal/repo/quota.go`
+- 新建：`server/internal/service/conversion.go`
 
-- [ ] **Step 1: Write conversion repository**
+- [ ] **步骤 1：write conversion repository**
 
 ```go
 // server/internal/repo/conversion.go
@@ -1136,7 +1136,7 @@ func (r *ConversionRepo) Delete(id, userID string) error {
 }
 ```
 
-- [ ] **Step 2: Write quota repository**
+- [ ] **步骤 2：write quota repository**
 
 ```go
 // server/internal/repo/quota.go
@@ -1176,7 +1176,7 @@ func (r *QuotaRepo) TodayCount(userID string) (int, error) {
 }
 ```
 
-- [ ] **Step 3: Write conversion service**
+- [ ] **步骤 3：write conversion service**
 
 ```go
 // server/internal/service/conversion.go
@@ -1262,11 +1262,11 @@ func getExt(filename string) string {
 }
 ```
 
-- [ ] **Step 4: Fix import in conversion repo (needs fmt)**
+- [ ] **步骤 4：fix import in conversion repo (needs fmt)**
 
 Check that `server/internal/repo/conversion.go` imports `"fmt"`. If not, add it.
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add server/internal/repo/conversion.go server/internal/repo/quota.go server/internal/service/conversion.go
@@ -1275,13 +1275,13 @@ git commit -m "feat: add conversion repository, quota repository, and conversion
 
 ---
 
-### Task 12: Conversion & Quota Handlers
+### 任务 12： Conversion & Quota Handlers
 
-**Files:**
-- Create: `server/internal/handler/conversion.go`
-- Create: `server/internal/handler/quota.go`
+**涉及文件：**
+- 新建：`server/internal/handler/conversion.go`
+- 新建：`server/internal/handler/quota.go`
 
-- [ ] **Step 1: Write conversion handler**
+- [ ] **步骤 1：write conversion handler**
 
 ```go
 // server/internal/handler/conversion.go
@@ -1371,7 +1371,7 @@ func (h *ConversionHandler) Download(c *gin.Context) {
 
 	// The download will be handled by the storage service through the conversion service.
 	// For MVP, redirect to the MinIO presigned URL or stream directly.
-	// Placeholder: return the SVG URL for now — actual streaming added in worker task.
+	// Placeholder: return the SVG URL for now —— actual streaming added in worker task.
 	c.JSON(http.StatusOK, gin.H{"svg_url": conv.SVGURL})
 }
 
@@ -1387,7 +1387,7 @@ func (h *ConversionHandler) Delete(c *gin.Context) {
 }
 ```
 
-- [ ] **Step 2: Write quota handler**
+- [ ] **步骤 2：write quota handler**
 
 ```go
 // server/internal/handler/quota.go
@@ -1423,9 +1423,9 @@ func (h *QuotaHandler) Daily(c *gin.Context) {
 }
 ```
 
-- [ ] **Step 3: Update router to add conversion and quota routes**
+- [ ] **步骤 3：update router to add conversion and quota routes**
 
-Modify `server/internal/router/router.go` — after the auth route group, add:
+Modify `server/internal/router/router.go` —— after the auth route group, add:
 
 ```go
 	convRepo := repo.NewConversionRepo(db)
@@ -1452,12 +1452,12 @@ Modify `server/internal/router/router.go` — after the auth route group, add:
 
 Also add `"log"` import and `"github.com/fan1ai2/vibe-coding-svg/server/internal/repo"` import.
 
-- [ ] **Step 4: Verify compilation**
+- [ ] **步骤 4：verify compilation**
 
 Run: `cd server && go mod tidy && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add server/internal/handler/conversion.go server/internal/handler/quota.go server/internal/router/router.go
@@ -1466,14 +1466,14 @@ git commit -m "feat: add conversion and quota handlers with routes"
 
 ---
 
-### Task 13: Worker — Queue Consumer & Vectorization
+### 任务 13： Worker —— Queue Consumer & Vectorization
 
-**Files:**
-- Create: `server/internal/worker/queue.go`
-- Create: `server/internal/worker/vectorize.go`
-- Modify: `server/cmd/worker/main.go`
+**涉及文件：**
+- 新建：`server/internal/worker/queue.go`
+- 新建：`server/internal/worker/vectorize.go`
+- 修改：`server/cmd/worker/main.go`
 
-- [ ] **Step 1: Write queue consumer**
+- [ ] **步骤 1：write queue consumer**
 
 ```go
 // server/internal/worker/queue.go
@@ -1530,7 +1530,7 @@ func (q *Queue) CacheResult(ctx context.Context, taskID string, data interface{}
 }
 ```
 
-- [ ] **Step 2: Write vectorization wrapper**
+- [ ] **步骤 2：write vectorization wrapper**
 
 ```go
 // server/internal/worker/vectorize.go
@@ -1642,7 +1642,7 @@ func countTag(svg, tag string) int {
 }
 ```
 
-- [ ] **Step 3: Update worker main.go**
+- [ ] **步骤 3：update worker main.go**
 
 ```go
 // server/cmd/worker/main.go
@@ -1724,9 +1724,9 @@ func main() {
 
 Add imports: `"bytes"` and `"fmt"` to worker main.go.
 
-- [ ] **Step 4: Enqueue job from conversion handler**
+- [ ] **步骤 4：enqueue job from conversion handler**
 
-Modify `server/internal/handler/conversion.go` — after creating the conversion, enqueue the job by injecting the Queue. Add to `ConversionHandler`:
+Modify `server/internal/handler/conversion.go` —— after creating the conversion, enqueue the job by injecting the Queue. Add to `ConversionHandler`:
 
 ```go
 type ConversionHandler struct {
@@ -1755,7 +1755,7 @@ In the `Create` method, after `conv, err := h.svc.UploadAndCreate(...)` and erro
 
 Add `"log"` import to handler. Update router.go to create the queue and pass it.
 
-- [ ] **Step 5: Update router.go to wire queue**
+- [ ] **步骤 5：update router.go to wire queue**
 
 Edit `server/internal/router/router.go`, add before creating convH:
 
@@ -1766,12 +1766,12 @@ Edit `server/internal/router/router.go`, add before creating convH:
 
 Add import: `"github.com/fan1ai2/vibe-coding-svg/server/internal/worker"`
 
-- [ ] **Step 6: Verify compilation**
+- [ ] **步骤 6：verify compilation**
 
 Run: `cd server && go mod tidy && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 7: Commit**
+- [ ] **步骤 7：commit**
 
 ```bash
 git add server/internal/worker/ server/cmd/worker/ server/internal/handler/conversion.go server/internal/router/router.go
@@ -1780,22 +1780,22 @@ git commit -m "feat: add worker with Redis queue, vectorization, and job pipelin
 
 ---
 
-### Task 14: React App Scaffolding
+### 任务 14： React App Scaffolding
 
-**Files:**
-- Create: `web/package.json`, `web/tsconfig.json`, `web/vite.config.ts`, `web/tailwind.config.js`, `web/postcss.config.js`, `web/index.html`, `web/src/main.tsx`, `web/src/App.tsx`
+**涉及文件：**
+- 新建：`web/package.json`, `web/tsconfig.json`, `web/vite.config.ts`, `web/tailwind.config.js`, `web/postcss.config.js`, `web/index.html`, `web/src/main.tsx`, `web/src/App.tsx`
 
-- [ ] **Step 1: Initialize Vite + React + TypeScript project**
+- [ ] **步骤 1：initialize Vite + React + TypeScript project**
 
 Run: `cd web && npm create vite@latest . -- --template react-ts && npm install`
-Expected: project scaffolded
+预期结果： project scaffolded
 
-- [ ] **Step 2: Install dependencies**
+- [ ] **步骤 2：install dependencies**
 
 Run: `cd web && npm install react-router-dom axios tailwindcss @tailwindcss/vite`
-Expected: packages installed
+预期结果： packages installed
 
-- [ ] **Step 3: Write vite.config.ts**
+- [ ] **步骤 3：write vite.config.ts**
 
 ```typescript
 // web/vite.config.ts
@@ -1814,7 +1814,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 4: Write index.html**
+- [ ] **步骤 4：write index.html**
 
 ```html
 <!DOCTYPE html>
@@ -1831,14 +1831,14 @@ export default defineConfig({
 </html>
 ```
 
-- [ ] **Step 5: Write CSS entry**
+- [ ] **步骤 5：write CSS entry**
 
 ```css
 /* web/src/index.css */
 @import "tailwindcss";
 ```
 
-- [ ] **Step 6: Write main.tsx and App.tsx skeletons**
+- [ ] **步骤 6：write main.tsx and App.tsx skeletons**
 
 ```tsx
 // web/src/main.tsx
@@ -1861,12 +1861,12 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 7: Verify dev server starts**
+- [ ] **步骤 7：verify dev server starts**
 
 Run: `cd web && npm run dev` (background) and check it responds
-Expected: Vite dev server on :5173
+预期结果： Vite dev server on :5173
 
-- [ ] **Step 8: Commit**
+- [ ] **步骤 8：commit**
 
 ```bash
 git add web/
@@ -1875,13 +1875,13 @@ git commit -m "feat: scaffold React app with Vite, TypeScript, Tailwind"
 
 ---
 
-### Task 15: Auth Context & API Client
+### 任务 15： Auth Context & API Client
 
-**Files:**
-- Create: `web/src/api/client.ts`
-- Create: `web/src/context/AuthContext.tsx`
+**涉及文件：**
+- 新建：`web/src/api/client.ts`
+- 新建：`web/src/context/AuthContext.tsx`
 
-- [ ] **Step 1: Write API client**
+- [ ] **步骤 1：write API client**
 
 ```typescript
 // web/src/api/client.ts
@@ -1914,7 +1914,7 @@ api.interceptors.response.use(
 export default api
 ```
 
-- [ ] **Step 2: Write AuthContext**
+- [ ] **步骤 2：write AuthContext**
 
 ```tsx
 // web/src/context/AuthContext.tsx
@@ -1983,7 +1983,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext)
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/api/ web/src/context/
@@ -1992,13 +1992,13 @@ git commit -m "feat: add API client with JWT interceptor and AuthContext"
 
 ---
 
-### Task 16: Landing Page & OAuth Callback
+### 任务 16： Landing Page & OAuth Callback
 
-**Files:**
-- Create: `web/src/pages/LandingPage.tsx`
-- Create: `web/src/pages/OAuthCallback.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/LandingPage.tsx`
+- 新建：`web/src/pages/OAuthCallback.tsx`
 
-- [ ] **Step 1: Write LandingPage**
+- [ ] **步骤 1：write LandingPage**
 
 ```tsx
 // web/src/pages/LandingPage.tsx
@@ -2053,7 +2053,7 @@ export default function LandingPage() {
 }
 ```
 
-- [ ] **Step 2: Write OAuthCallback**
+- [ ] **步骤 2：write OAuthCallback**
 
 ```tsx
 // web/src/pages/OAuthCallback.tsx
@@ -2080,7 +2080,7 @@ export default function OAuthCallback() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/pages/LandingPage.tsx web/src/pages/OAuthCallback.tsx
@@ -2089,12 +2089,12 @@ git commit -m "feat: add landing page and OAuth callback page"
 
 ---
 
-### Task 17: Workspace Layout & Sidebar
+### 任务 17： Workspace Layout & Sidebar
 
-**Files:**
-- Create: `web/src/pages/WorkspaceLayout.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/WorkspaceLayout.tsx`
 
-- [ ] **Step 1: Write WorkspaceLayout**
+- [ ] **步骤 1：write WorkspaceLayout**
 
 ```tsx
 // web/src/pages/WorkspaceLayout.tsx
@@ -2151,7 +2151,7 @@ export default function WorkspaceLayout() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/pages/WorkspaceLayout.tsx
@@ -2160,13 +2160,13 @@ git commit -m "feat: add workspace layout with sidebar and quota display"
 
 ---
 
-### Task 18: Convert Page (Upload & Processing)
+### 任务 18： Convert Page (Upload & Processing)
 
-**Files:**
-- Create: `web/src/components/DropZone.tsx`
-- Create: `web/src/pages/ConvertPage.tsx`
+**涉及文件：**
+- 新建：`web/src/components/DropZone.tsx`
+- 新建：`web/src/pages/ConvertPage.tsx`
 
-- [ ] **Step 1: Write DropZone component**
+- [ ] **步骤 1：write DropZone component**
 
 ```tsx
 // web/src/components/DropZone.tsx
@@ -2212,14 +2212,14 @@ export default function DropZone({ onFile, disabled }: Props) {
       <label htmlFor="file-input" className="cursor-pointer">
         <p className="text-2xl mb-2">📁</p>
         <p className="font-medium">Drop your image here or click to browse</p>
-        <p className="text-sm text-gray-500 mt-1">PNG, JPG, WebP — max 10MB</p>
+        <p className="text-sm text-gray-500 mt-1">PNG, JPG, WebP —— max 10MB</p>
       </label>
     </div>
   )
 }
 ```
 
-- [ ] **Step 2: Write ConvertPage**
+- [ ] **步骤 2：write ConvertPage**
 
 ```tsx
 // web/src/pages/ConvertPage.tsx
@@ -2269,7 +2269,7 @@ export default function ConvertPage() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/components/DropZone.tsx web/src/pages/ConvertPage.tsx
@@ -2278,14 +2278,14 @@ git commit -m "feat: add DropZone component and ConvertPage with upload flow"
 
 ---
 
-### Task 19: Preview Page (Comparison + Download)
+### 任务 19： Preview Page (Comparison + Download)
 
-**Files:**
-- Create: `web/src/components/ZoomControls.tsx`
-- Create: `web/src/components/MetadataCard.tsx`
-- Create: `web/src/pages/PreviewPage.tsx`
+**涉及文件：**
+- 新建：`web/src/components/ZoomControls.tsx`
+- 新建：`web/src/components/MetadataCard.tsx`
+- 新建：`web/src/pages/PreviewPage.tsx`
 
-- [ ] **Step 1: Write ZoomControls**
+- [ ] **步骤 1：write ZoomControls**
 
 ```tsx
 // web/src/components/ZoomControls.tsx
@@ -2309,7 +2309,7 @@ export default function ZoomControls({ zoom, onZoom }: Props) {
 }
 ```
 
-- [ ] **Step 2: Write MetadataCard**
+- [ ] **步骤 2：write MetadataCard**
 
 ```tsx
 // web/src/components/MetadataCard.tsx
@@ -2342,7 +2342,7 @@ export default function MetadataCard({ data }: { data: Metadata }) {
 }
 ```
 
-- [ ] **Step 3: Write PreviewPage**
+- [ ] **步骤 3：write PreviewPage**
 
 ```tsx
 // web/src/pages/PreviewPage.tsx
@@ -2439,7 +2439,7 @@ export default function PreviewPage() {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add web/src/components/ZoomControls.tsx web/src/components/MetadataCard.tsx web/src/pages/PreviewPage.tsx
@@ -2448,13 +2448,13 @@ git commit -m "feat: add preview page with comparison view, zoom, and download"
 
 ---
 
-### Task 20: Library Page
+### 任务 20： Library Page
 
-**Files:**
-- Create: `web/src/components/ConversionCard.tsx`
-- Create: `web/src/pages/LibraryPage.tsx`
+**涉及文件：**
+- 新建：`web/src/components/ConversionCard.tsx`
+- 新建：`web/src/pages/LibraryPage.tsx`
 
-- [ ] **Step 1: Write ConversionCard**
+- [ ] **步骤 1：write ConversionCard**
 
 ```tsx
 // web/src/components/ConversionCard.tsx
@@ -2496,7 +2496,7 @@ export default function ConversionCard({ id, status, format_in, file_size_in, fi
 }
 ```
 
-- [ ] **Step 2: Write LibraryPage**
+- [ ] **步骤 2：write LibraryPage**
 
 ```tsx
 // web/src/pages/LibraryPage.tsx
@@ -2547,7 +2547,7 @@ export default function LibraryPage() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/components/ConversionCard.tsx web/src/pages/LibraryPage.tsx
@@ -2556,12 +2556,12 @@ git commit -m "feat: add library page with filter and conversion cards"
 
 ---
 
-### Task 21: Wire Up App.tsx with Router
+### 任务 21： Wire Up App.tsx with Router
 
-**Files:**
-- Modify: `web/src/App.tsx`
+**涉及文件：**
+- 修改：`web/src/App.tsx`
 
-- [ ] **Step 1: Update App.tsx with routes**
+- [ ] **步骤 1：update App.tsx with routes**
 
 ```tsx
 // web/src/App.tsx
@@ -2593,12 +2593,12 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 2: Verify frontend compiles**
+- [ ] **步骤 2：verify frontend compiles**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/App.tsx
@@ -2607,13 +2607,13 @@ git commit -m "feat: wire up React Router with all pages"
 
 ---
 
-### Task 22: Dockerfiles
+### 任务 22： Dockerfiles
 
-**Files:**
-- Create: `Dockerfile.api`
-- Create: `Dockerfile.worker`
+**涉及文件：**
+- 新建：`Dockerfile.api`
+- 新建：`Dockerfile.worker`
 
-- [ ] **Step 1: Write Dockerfile.api**
+- [ ] **步骤 1：write Dockerfile.api**
 
 ```dockerfile
 # Dockerfile.api
@@ -2631,7 +2631,7 @@ EXPOSE 8080
 CMD ["/api"]
 ```
 
-- [ ] **Step 2: Write Dockerfile.worker**
+- [ ] **步骤 2：write Dockerfile.worker**
 
 ```dockerfile
 # Dockerfile.worker
@@ -2648,7 +2648,7 @@ COPY --from=builder /worker /worker
 CMD ["/worker"]
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add Dockerfile.api Dockerfile.worker
@@ -2657,9 +2657,9 @@ git commit -m "feat: add Dockerfiles for API and worker services"
 
 ---
 
-### Task 23: End-to-End Verification
+### 任务 23： End-to-End Verification
 
-- [ ] **Step 1: Start all services**
+- [ ] **步骤 1：start all services**
 
 ```bash
 docker-compose up -d                          # postgres, redis, minio
@@ -2668,26 +2668,26 @@ cd server && go run ./cmd/worker/main.go &    # Worker
 cd web && npm run dev &                       # React dev server
 ```
 
-- [ ] **Step 2: Verify API health**
+- [ ] **步骤 2：verify API health**
 
 Run: `curl http://localhost:8080/api/v1/auth/me`
-Expected: `{"error":{"code":"UNAUTHORIZED","message":"missing or malformed token"}}` (middleware works)
+预期结果： `{"error":{"code":"UNAUTHORIZED","message":"missing or malformed token"}}` (middleware works)
 
-- [ ] **Step 3: Verify frontend loads**
+- [ ] **步骤 3：verify frontend loads**
 
 Open `http://localhost:5173` in browser. Landing page should render with GitHub/Google login buttons.
 
-- [ ] **Step 4: Verify MinIO is accessible**
+- [ ] **步骤 4：verify MinIO is accessible**
 
-Run: `curl http://localhost:9001` — MinIO console should respond
+Run: `curl http://localhost:9001` —— MinIO console should respond
 
-- [ ] **Step 5: Run migration**
+- [ ] **步骤 5：run migration**
 
 ```bash
 cd server && migrate -path migrations -database "postgres://svguser:svgpass@localhost:5432/svgconverter?sslmode=disable" up
 ```
 
-- [ ] **Step 6: Commit final state**
+- [ ] **步骤 6：commit final state**
 
 ```bash
 git add -A
@@ -2699,16 +2699,16 @@ git commit -m "chore: final integration and verification"
 ### Plan Self-Review
 
 **Spec Coverage:**
-- Auth (GitHub/Google OAuth) — Task 6, 7, 9
-- Conversions CRUD — Task 11, 12
-- Quota tracking — Task 11, 12
-- Worker + vectorization — Task 13
-- Frontend landing page — Task 16
-- Frontend upload/convert — Task 18
-- Frontend preview/comparison — Task 19
-- Frontend library — Task 20
-- Docker compose — Task 1
-- Dockerfiles — Task 22
+- Auth (GitHub/Google OAuth) —— Task 6, 7, 9
+- Conversions CRUD —— Task 11, 12
+- Quota tracking —— Task 11, 12
+- Worker + vectorization —— Task 13
+- Frontend landing page —— Task 16
+- Frontend upload/convert —— Task 18
+- Frontend preview/comparison —— Task 19
+- Frontend library —— Task 20
+- Docker compose —— Task 1
+- Dockerfiles —— Task 22
 
 **Placeholder Scan:** No TBDs, TODOs, or vague instructions.
 

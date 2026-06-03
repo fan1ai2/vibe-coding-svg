@@ -1,33 +1,33 @@
-# Email Auth + Guest Mode Design
+# 邮箱认证 + 游客模式 — 设计文档
 
-**Date**: 2026-05-25
-**Status**: approved
+**日期**：2026-05-25
+**状态**：已批准
 
-## Summary
+## 概述
 
-Add three login paths on the landing page: guest mode (3 free conversions then lock), email verification-code login/register via SMTP, and existing GitHub OAuth. Guest users go through the same JWT auth pipeline as regular users, with provider="guest".
+在首页添加三种登录方式：游客模式（3 次免费转换后锁定）、通过 SMTP 的邮箱验证码登录/注册、以及现有的 GitHub OAuth。游客用户与注册用户使用相同的 JWT 认证管线，provider="guest"。
 
-## User Flow
+## 用户流程
 
 ```
 LandingPage
   ├── "开始免费使用" → POST /api/v1/auth/guest
-  │     → Create guest user (provider="guest"), issue JWT (24h)
-  │     → Set guest_id cookie + fingerprint header
-  │     → 3 conversions allowed, then 429 → UsageLimitModal
+  │     → 创建游客用户 (provider="guest")，签发 JWT（24h）
+  │     → 设置 guest_id cookie + fingerprint 头
+  │     → 允许 3 次转换，超出后 429 → UsageLimitModal
   │
   ├── "邮箱登录/注册" → EmailLoginModal
-  │     → Step 1: enter email → POST /api/v1/auth/email/send-code
-  │     → SMTP sends 6-digit code (5min TTL)
-  │     → Step 2: enter code → POST /api/v1/auth/email/verify
-  │     → New email auto-registers, issue JWT (7d)
+  │     → 步骤 1：输入邮箱 → POST /api/v1/auth/email/send-code
+  │     → SMTP 发送 6 位验证码（5 分钟有效）
+  │     → 步骤 2：输入验证码 → POST /api/v1/auth/email/verify
+  │     → 新邮箱自动注册，签发 JWT（7 天）
   │
-  └── "GitHub 登录 →" → existing GitHub OAuth flow
+  └── "GitHub 登录 →" → 现有 GitHub OAuth 流程
 ```
 
-## Database Changes
+## 数据库变更
 
-### New table: `verification_codes`
+### 新表：`verification_codes`
 
 ```sql
 CREATE TABLE verification_codes (
@@ -41,11 +41,11 @@ CREATE TABLE verification_codes (
 CREATE INDEX idx_verification_codes_email_code ON verification_codes(email, code);
 ```
 
-### Migration: `004_email_auth.up.sql`
+### 迁移文件：`004_email_auth.up.sql`
 
-### Migration: `003_create_quotas.up.sql` — no changes needed (guest users have user_id, quota works as-is)
+### 迁移文件：`003_create_quotas.up.sql` —— 无需修改（游客用户有 user_id，配额机制同样适用）
 
-### Migration: `005_guest_provider.up.sql` — relax UNIQUE(provider, provider_id)
+### 迁移文件：`005_guest_provider.up.sql` —— 放宽 UNIQUE(provider, provider_id) 约束
 
 ```sql
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_provider_provider_id_key;
@@ -53,42 +53,42 @@ CREATE UNIQUE INDEX users_provider_unique ON users(provider, provider_id)
     WHERE provider != 'guest';
 ```
 
-## API Endpoints
+## API 接口
 
 ### POST `/api/v1/auth/guest`
 
-Create or restore a guest user. Accepts optional `guest_id` cookie and `X-Fingerprint` header for session continuity.
+创建或恢复游客用户。接受可选的 `guest_id` cookie 和 `X-Fingerprint` 请求头以保持会话连续性。
 
-- Request: empty body (optional cookie/fingerprint)
-- Response: `{ "token": "jwt...", "user": { ... } }`
-- Sets: `guest_id` cookie (httpOnly, long-lived)
+- 请求：空 body（可选 cookie/fingerprint）
+- 响应：`{ "token": "jwt...", "user": { ... } }`
+- 设置：`guest_id` cookie（httpOnly，长期有效）
 
-Logic:
-1. If valid `guest_id` cookie present → find existing guest user, return JWT
-2. If `X-Fingerprint` header present → try to find guest by fingerprint
-3. Otherwise → create new guest user with random provider_id
+逻辑：
+1. 如果存在有效的 `guest_id` cookie → 找到已有游客用户，返回 JWT
+2. 如果存在 `X-Fingerprint` 请求头 → 尝试通过指纹查找游客
+3. 否则 → 创建新的游客用户，使用随机 provider_id
 
 ### POST `/api/v1/auth/email/send-code`
 
-Send 6-digit verification code to email via SMTP.
+通过 SMTP 向邮箱发送 6 位验证码。
 
-- Request: `{ "email": "user@example.com" }`
-- Response: `{ "ok": true }`
-- Rate limit: 1 per email per 60 seconds
-- Code TTL: 5 minutes
+- 请求：`{ "email": "user@example.com" }`
+- 响应：`{ "ok": true }`
+- 限流：每个邮箱每 60 秒 1 次
+- 验证码有效期：5 分钟
 
 ### POST `/api/v1/auth/email/verify`
 
-Verify the code and login/register.
+验证验证码并登录/注册。
 
-- Request: `{ "email": "user@example.com", "code": "123456" }`
-- Response: `{ "token": "jwt...", "user": { ... } }`
-- If email is new → auto-create user (provider="email")
-- If email exists → login as existing user
+- 请求：`{ "email": "user@example.com", "code": "123456" }`
+- 响应：`{ "token": "jwt...", "user": { ... } }`
+- 如果邮箱是新的 → 自动创建用户（provider="email"）
+- 如果邮箱已存在 → 作为已有用户登录
 
-## Config Changes (server/internal/config/config.go)
+## 配置变更（server/internal/config/config.go）
 
-New SMTP fields:
+新增 SMTP 字段：
 
 ```go
 SMTPHost     string
@@ -98,43 +98,43 @@ SMTPPassword string
 SMTPFrom     string
 ```
 
-New env vars: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
+新增环境变量：`SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、`SMTP_PASSWORD`、`SMTP_FROM`
 
-## Backend File Changes
+## 后端文件变更
 
-| File | Change |
+| 文件 | 变更 |
 |------|--------|
-| `server/internal/config/config.go` | Add SMTP fields |
-| `server/internal/model/user.go` | No change (guest uses existing User struct) |
-| `server/internal/repo/user.go` | Add `FindByGuestID`, `FindByEmail`, `CreateGuest` methods |
-| `server/internal/service/auth.go` | Add `EmailSendCode`, `EmailVerify`, `GuestLogin` methods |
-| `server/internal/handler/auth.go` | Add `EmailSendCode`, `EmailVerify`, `GuestLogin` handlers |
-| `server/internal/router/router.go` | Add new routes |
-| `server/internal/service/email.go` | **New**: SMTP email sending service |
-| `server/migrations/004_verification_codes.up.sql` | **New**: verification_codes table |
-| `server/migrations/005_guest_provider.up.sql` | **New**: relax unique constraint |
+| `server/internal/config/config.go` | 添加 SMTP 字段 |
+| `server/internal/model/user.go` | 无变化（游客复用现有 User 结构体） |
+| `server/internal/repo/user.go` | 添加 `FindByGuestID`、`FindByEmail`、`CreateGuest` 方法 |
+| `server/internal/service/auth.go` | 添加 `EmailSendCode`、`EmailVerify`、`GuestLogin` 方法 |
+| `server/internal/handler/auth.go` | 添加 `EmailSendCode`、`EmailVerify`、`GuestLogin` 处理器 |
+| `server/internal/router/router.go` | 添加新路由 |
+| `server/internal/service/email.go` | **新建**：SMTP 邮件发送服务 |
+| `server/migrations/004_verification_codes.up.sql` | **新建**：verification_codes 表 |
+| `server/migrations/005_guest_provider.up.sql` | **新建**：放宽唯一约束 |
 
-## Frontend File Changes
+## 前端文件变更
 
-| File | Change |
+| 文件 | 变更 |
 |------|--------|
-| `web/src/pages/LandingPage.tsx` | New layout: 3 buttons stacked (guest / email / GitHub) |
-| `web/src/components/EmailLoginModal.tsx` | **New**: 2-step modal (email input → code input) |
-| `web/src/components/UsageLimitModal.tsx` | **New**: quota exhausted popup |
-| `web/src/components/GuestBanner.tsx` | **New**: remaining free conversions indicator |
-| `web/src/context/AuthContext.tsx` | Support guest token + remaining quota tracking |
-| `web/src/api/client.ts` | Add email auth + guest API methods |
+| `web/src/pages/LandingPage.tsx` | 全新布局：3 个按钮纵向排列（游客 / 邮箱 / GitHub） |
+| `web/src/components/EmailLoginModal.tsx` | **新建**：两步式弹窗（输入邮箱 → 输入验证码） |
+| `web/src/components/UsageLimitModal.tsx` | **新建**：配额耗尽弹窗 |
+| `web/src/components/GuestBanner.tsx` | **新建**：剩余免费转换次数提示 |
+| `web/src/context/AuthContext.tsx` | 支持游客 token + 剩余配额跟踪 |
+| `web/src/api/client.ts` | 添加邮箱认证 + 游客 API 方法 |
 
-## Guest Quota Enforcement
+## 游客配额控制
 
-Two-layer enforcement:
+双层控制：
 
-**Frontend (primary UX):** Track count in localStorage (`guest_conversion_count`). Increment after each upload. When count >= 3, show UsageLimitModal and block further uploads.
+**前端（主要 UX）：** 在 localStorage 中跟踪计数（`guest_conversion_count`）。每次上传后递增。当 count >= 3 时，显示 UsageLimitModal 并阻止进一步上传。
 
-**Backend (hard cap):** In `ConversionService.Enqueue`, when user.provider == "guest", query `SELECT COUNT(*) FROM conversions WHERE user_id=$1` — if total >= 3, return error (code: `QUOTA_EXHAUSTED`). This prevents circumvention via curl/API direct calls.
+**后端（硬上限）：** 在 `ConversionService.Enqueue` 中，当 user.provider == "guest" 时，查询 `SELECT COUNT(*) FROM conversions WHERE user_id=$1` —— 如果总数 >= 3，返回错误（code: `QUOTA_EXHAUSTED`）。这防止通过 curl/API 直接调用绕过限制。
 
-Registered users (email/GitHub) use the existing daily quota (20/day), unaffected by guest limits.
+注册用户（邮箱/GitHub）使用现有的每日配额（20 次/天），不受游客限制影响。
 
-## Verification Code Cleanup
+## 验证码清理
 
-Worker or cron that deletes expired verification codes. For simplicity, a goroutine in the API server runs every 5 minutes to clean up codes older than 1 hour.
+Worker 或定时任务删除过期的验证码。为简单起见，API 服务器中的一个 goroutine 每 5 分钟运行一次，清理超过 1 小时的验证码。

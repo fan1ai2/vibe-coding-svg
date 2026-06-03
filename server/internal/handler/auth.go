@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -41,8 +42,9 @@ func (h *AuthHandler) GithubLogin(c *gin.Context) {
 	secure := strings.HasPrefix(h.cfg.FrontendURL, "https://")
 	c.SetCookie("oauth_state", state, int(10*time.Minute.Seconds()), "/api/v1/auth/github", "", secure, true)
 
-	url := "https://github.com/login/oauth/authorize?client_id=" + h.cfg.GithubClientID + "&scope=user:email&state=" + state
-	c.Redirect(http.StatusFound, url)
+	callbackURL := h.cfg.FrontendURL + "/api/v1/auth/github/callback"
+	redirectURL := "https://github.com/login/oauth/authorize?client_id=" + url.QueryEscape(h.cfg.GithubClientID) + "&redirect_uri=" + url.QueryEscape(callbackURL) + "&scope=user:email&state=" + url.QueryEscape(state)
+	c.Redirect(http.StatusFound, redirectURL)
 }
 
 // GithubCallback godoc
@@ -120,7 +122,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// GuestLogin handles guest user creation/login.
+// GuestLogin 处理访客用户创建和登录
 func (h *AuthHandler) GuestLogin(c *gin.Context) {
 	guestID, _ := c.Cookie("guest_id")
 
@@ -137,7 +139,7 @@ func (h *AuthHandler) GuestLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token, "user": user})
 }
 
-// EmailSendCode sends verification code to the given email.
+// EmailSendCode 向指定邮箱发送验证码
 func (h *AuthHandler) EmailSendCode(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
@@ -155,7 +157,7 @@ func (h *AuthHandler) EmailSendCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// EmailVerify validates the code and returns a JWT.
+// EmailVerify 验证邮箱验证码并返回 JWT
 func (h *AuthHandler) EmailVerify(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`

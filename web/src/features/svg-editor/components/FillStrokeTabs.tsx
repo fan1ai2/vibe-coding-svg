@@ -16,13 +16,13 @@ export default function FillStrokeTabs({ mode, onChange }: FillStrokeTabsProps) 
         onClick={() => onChange('fill')}
         className={`${base} ${mode === 'fill' ? active : inactive}`}
       >
-        Fill
+        填充
       </button>
       <button
         onClick={() => onChange('stroke')}
         className={`${base} ${mode === 'stroke' ? active : inactive}`}
       >
-        Stroke
+        描边
       </button>
     </div>
   )

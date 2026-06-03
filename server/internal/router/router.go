@@ -5,9 +5,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/fan1ai2/vibe-coding-svg/server/internal/ai"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/handler"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/middleware"
+	"github.com/fan1ai2/vibe-coding-svg/server/internal/neo4j"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/repo"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/service"
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,7 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	// --- 认证模块 ---
 	userRepo := repo.NewUserRepo(db)
 
-	// Start cleanup goroutine for expired verification codes
+	// 启动清理过期验证码的后台协程
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
@@ -52,6 +54,26 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 	convSvc := service.NewConversionService(cfg, convRepo, storage, asynqClient)
 	convH := handler.NewConversionHandler(cfg, convSvc)
 
+	// --- Neo4j ---
+	if err := neo4j.Init(cfg.Neo4jURI, "neo4j", cfg.Neo4jPassword); err != nil {
+		log.Fatalf("Neo4j 连接失败: %v", err)
+	}
+
+	// --- 图标库模块 ---
+	iconRepo := repo.NewIconRepo(db)
+	tagRepo := repo.NewTagRepo(db)
+	graphSync := neo4j.NewGraphSyncService()
+	iconSvc := service.NewIconService(iconRepo, tagRepo, graphSync)
+	iconH := handler.NewIconHandler(iconSvc)
+	tagH := handler.NewTagHandler(tagRepo)
+
+	// --- AI 图标生成模块 ---
+	promptBuilder := ai.NewPromptBuilder(db)
+	aiProvider := ai.NewOpenAIClient(cfg.AiBaseURL, cfg.AiApiKey, cfg.AiModel, promptBuilder)
+	aiQuota := ai.NewQuotaService(cfg.RedisAddr)
+	aiSvc := service.NewAiService(aiProvider, aiQuota)
+	aiH := handler.NewAiHandler(aiSvc)
+
 	healthH := handler.NewHealthHandler(db, cfg.RedisAddr, storage.Client())
 	fileH := handler.NewFileHandler(storage)
 
@@ -77,14 +99,14 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 		// 认证接口（部分公开）
 		auth := api.Group("/auth")
 		{
-			// Guest
+			// 访客
 			auth.POST("/guest", authH.GuestLogin)
 
-			// Email
+			// 邮箱
 			auth.POST("/email/send-code", authH.EmailSendCode)
 			auth.POST("/email/verify", authH.EmailVerify)
 
-			// GitHub (existing)
+			// GitHub（已有）
 			auth.GET("/github/login", authH.GithubLogin)
 			auth.GET("/github/callback", authH.GithubCallback)
 			auth.POST("/refresh", middleware.JWTAuth(cfg), authH.Refresh)
@@ -100,6 +122,45 @@ func Setup(cfg *config.Config, db *sql.DB) *gin.Engine {
 			conversions.GET("/:id", convH.Status)
 			conversions.GET("/:id/download", convH.Download)
 		}
+
+		// 编辑器保存的 SVG（全部需要认证）
+		savedSvgRepo := repo.NewSavedSvgRepo(db)
+		savedSvgH := handler.NewSavedSvgHandler(savedSvgRepo)
+		svgs := api.Group("/svgs")
+		svgs.Use(middleware.JWTAuth(cfg))
+		{
+			svgs.POST("", savedSvgH.Save)
+			svgs.GET("", savedSvgH.List)
+			svgs.GET("/:id", savedSvgH.Get)
+			svgs.GET("/:id/download", savedSvgH.Download)
+			svgs.DELETE("/:id", savedSvgH.Delete)
+		}
+
+		// 图标库 — 搜索和详情公开，其余需认证
+		icons := api.Group("/icons")
+		{
+			icons.Use(middleware.OptionalJWTAuth(cfg))
+			icons.GET("/search", iconH.Search)
+			icons.GET("/:id", iconH.Get)
+			icons.GET("/:id/recommend", iconH.Recommend)
+			icons.GET("", iconH.List)
+
+			icons.Use(middleware.JWTAuth(cfg))
+			icons.POST("", iconH.Create)
+			icons.POST("/batch", iconH.BatchCreate)
+			icons.DELETE("/:id", iconH.Delete)
+		}
+
+		// AI 图标生成（全部需要认证）
+		aig := api.Group("/ai")
+		aig.Use(middleware.JWTAuth(cfg))
+		{
+			aig.POST("/generate", aiH.Generate)
+			aig.GET("/quota", aiH.Quota)
+		}
+
+		// 标签 — 公开
+		api.GET("/tags", tagH.List)
 	}
 
 	return r

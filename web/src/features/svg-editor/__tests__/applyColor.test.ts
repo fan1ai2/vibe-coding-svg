@@ -11,7 +11,7 @@ function makeDoc() {
 }
 
 describe('createColorState', () => {
-  it('builds state from SVG doc', () => {
+  it('从 SVG 文档构建状态', () => {
     const doc = makeDoc()
     const state = createColorState(doc)
     expect(state.colorMap.get('#FF0000')?.size).toBe(2)
@@ -25,18 +25,18 @@ describe('applyColor', () => {
     state = createColorState(makeDoc())
   })
 
-  it('changes element fill color', () => {
+  it('修改元素填充颜色', () => {
     const el = state.doc.getElementById('r1')! as unknown as SVGElement
     applyColor(state, el, '#00FF00', 'fill')
     expect(el.getAttribute('fill')).toBe('#00FF00')
     expect(state.undoStack.length).toBe(1)
   })
 
-  it('updates colorMap after apply', () => {
+  it('应用颜色后更新 colorMap', () => {
     const el = state.doc.getElementById('r1')! as unknown as SVGElement
     applyColor(state, el, '#00FF00', 'fill')
-    expect(state.colorMap.get('#FF0000')?.size).toBe(1) // r2 still red
-    expect(state.colorMap.get('#00FF00')?.size).toBe(1) // r1 now green
+    expect(state.colorMap.get('#FF0000')?.size).toBe(1) // r2 仍然是红色
+    expect(state.colorMap.get('#00FF00')?.size).toBe(1) // r1 现在是绿色
   })
 })
 
@@ -49,21 +49,21 @@ describe('undo / redo', () => {
     applyColor(state, el, '#00FF00', 'fill')
   })
 
-  it('undo restores previous color', () => {
+  it('撤销恢复之前的颜色', () => {
     const el = state.doc.getElementById('r1')! as unknown as SVGElement
     undo(state)
     expect(el.getAttribute('fill')).toBe('#FF0000')
     expect(state.redoStack.length).toBe(1)
   })
 
-  it('redo re-applies the change', () => {
+  it('重做重新应用更改', () => {
     const el = state.doc.getElementById('r1')!
     undo(state)
     redo(state)
     expect(el.getAttribute('fill')).toBe('#00FF00')
   })
 
-  it('undo then apply clears redo stack', () => {
+  it('撤销后再应用会清空重做栈', () => {
     const el = state.doc.getElementById('r1')! as unknown as SVGElement
     undo(state)
     applyColor(state, el, '#000000', 'fill')
@@ -72,7 +72,7 @@ describe('undo / redo', () => {
 })
 
 describe('themeReplace', () => {
-  it('replaces all occurrences of a color', () => {
+  it('替换所有匹配的颜色', () => {
     const state = createColorState(makeDoc())
     themeReplace(state, '#FF0000', '#000000', 'fill')
     expect(state.doc.getElementById('r1')!.getAttribute('fill')).toBe('#000000')
@@ -80,7 +80,7 @@ describe('themeReplace', () => {
     expect(state.colorMap.has('#FF0000')).toBe(false)
   })
 
-  it('does nothing when source color does not exist', () => {
+  it('源颜色不存在时不做任何操作', () => {
     const state = createColorState(makeDoc())
     themeReplace(state, '#BADBAD', '#000000', 'fill')
     expect(state.undoStack.length).toBe(0)
@@ -88,7 +88,7 @@ describe('themeReplace', () => {
 })
 
 describe('MAX_UNDO', () => {
-  it('discards oldest entry when stack exceeds 50', () => {
+  it('栈超过 50 时丢弃最早的记录', () => {
     const state = createColorState(makeDoc())
     const el = state.doc.getElementById('r1')! as unknown as SVGElement
     for (let i = 0; i < 55; i++) {

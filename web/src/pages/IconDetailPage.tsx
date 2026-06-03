@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { icons, type Icon } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import IconCard from '../components/IconCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function IconDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [icon, setIcon] = useState<Icon | null>(null);
   const [recommended, setRecommended] = useState<Icon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,11 @@ export default function IconDetailPage() {
           <button
             onClick={() => {
               sessionStorage.setItem('editor:pendingSvg', icon.svg_content ?? '')
-              navigate('/workspace/editor')
+              if (token) {
+                navigate('/workspace/editor')
+              } else {
+                navigate('/')
+              }
             }}
             className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
           >
@@ -92,7 +98,7 @@ export default function IconDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
-            在编辑器中打开
+            {token ? '在编辑器中打开' : '登录后编辑'}
           </button>
           <p className="text-xs text-gray-400">下载: {icon.download_count} 次</p>
         </div>

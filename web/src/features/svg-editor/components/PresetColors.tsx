@@ -7,7 +7,7 @@ interface PresetColorsProps {
 export default function PresetColors({ onSelect }: PresetColorsProps) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">Presets</label>
+      <label className="text-xs font-medium text-gray-500">预设颜色</label>
       <div className="grid grid-cols-4 gap-1.5">
         {PRESETS.map(p => (
           <button

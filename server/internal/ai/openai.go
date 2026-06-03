@@ -28,14 +28,15 @@ func NewOpenAIClient(baseURL, apiKey, model string, builder *PromptBuilder) *Ope
 		apiKey:  apiKey,
 		model:   model,
 		builder: builder,
-		client:  &http.Client{},
+		client: &http.Client{Timeout: 180 * time.Second},
 	}
 }
 
 type chatRequest struct {
-	Model    string    `json:"model"`
-	Messages []message `json:"messages"`
-	Stream   bool      `json:"stream"`
+	Model     string    `json:"model"`
+	Messages  []message `json:"messages"`
+	Stream    bool      `json:"stream"`
+	MaxTokens int       `json:"max_tokens"`
 }
 
 type message struct {
@@ -45,10 +46,14 @@ type message struct {
 
 type streamChunk struct {
 	Choices []struct {
-		Delta   struct{ Content string `json:"content"` }   `json:"delta"`
-		Message struct{ Content string `json:"content"` }   `json:"message"`
+		Delta   struct{ Content string `json:"content"` } `json:"delta"`
+		Message struct{ Content string `json:"content"` } `json:"message"`
 		Text    string `json:"text"`
 	} `json:"choices"`
+	Error *struct {
+		Type    string `json:"type"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 func (c *OpenAIClient) Generate(ctx context.Context, prompt, style string) ([]IconCandidate, error) {
@@ -95,7 +100,8 @@ func (c *OpenAIClient) call(ctx context.Context, sysPrompt, userPrompt string) (
 			{Role: "system", Content: sysPrompt},
 			{Role: "user", Content: userPrompt},
 		},
-		Stream: true,
+		Stream:    true,
+		MaxTokens: 8000,
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -171,6 +177,10 @@ func parseSSE(body string) (string, error) {
 		var chunk streamChunk
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue
+		}
+		// 检测 SSE 流中的错误块（某些兼容 API 在流式响应中返回错误）
+		if chunk.Error != nil && chunk.Error.Message != "" {
+			return "", fmt.Errorf("upstream error: %s", chunk.Error.Message)
 		}
 		for _, choice := range chunk.Choices {
 			if choice.Delta.Content != "" {

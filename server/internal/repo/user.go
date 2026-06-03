@@ -16,7 +16,7 @@ func NewUserRepo(db *sql.DB) *UserRepo { return &UserRepo{db} }
 func (r *UserRepo) FindByProvider(provider, providerID string) (*model.User, error) {
 	u := &model.User{}
 	err := r.db.QueryRow(
-		`SELECT id, email, name, avatar_url, provider, provider_id, created_at, updated_at
+		`SELECT id, COALESCE(email, '') as email, name, COALESCE(avatar_url, '') as avatar_url, provider, provider_id, created_at, updated_at
 		 FROM users WHERE provider=$1 AND provider_id=$2`,
 		provider, providerID,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.Provider, &u.ProviderID, &u.CreatedAt, &u.UpdatedAt)
@@ -35,16 +35,12 @@ func (r *UserRepo) Create(u *model.User) error {
 }
 
 func (r *UserRepo) UpsertByProvider(u *model.User) error {
-	email := u.Email
-	if email == "" {
-		email = ""
-	}
 	return r.db.QueryRow(
 		`INSERT INTO users (email, name, avatar_url, provider, provider_id)
 		 VALUES ($1,$2,$3,$4,$5)
 		 ON CONFLICT (provider, provider_id) DO UPDATE
 		 SET name=EXCLUDED.name, avatar_url=EXCLUDED.avatar_url, email=COALESCE(NULLIF(EXCLUDED.email,''), users.email), updated_at=now()
-		 RETURNING id, email, created_at, updated_at`,
+		 RETURNING id, COALESCE(email, '') as email, created_at, updated_at`,
 		nullIfEmpty(u.Email), u.Name, u.AvatarURL, u.Provider, u.ProviderID,
 	).Scan(&u.ID, &u.Email, &u.CreatedAt, &u.UpdatedAt)
 }
@@ -59,7 +55,7 @@ func nullIfEmpty(s string) any {
 func (r *UserRepo) FindByID(id string) (*model.User, error) {
 	u := &model.User{}
 	err := r.db.QueryRow(
-		`SELECT id, email, name, avatar_url, provider, provider_id, created_at, updated_at
+		`SELECT id, COALESCE(email, '') as email, name, COALESCE(avatar_url, '') as avatar_url, provider, provider_id, created_at, updated_at
 		 FROM users WHERE id=$1`, id,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.Provider, &u.ProviderID, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
@@ -71,7 +67,7 @@ func (r *UserRepo) FindByID(id string) (*model.User, error) {
 func (r *UserRepo) FindByEmail(email string) (*model.User, error) {
 	u := &model.User{}
 	err := r.db.QueryRow(
-		`SELECT id, email, name, avatar_url, provider, provider_id, created_at, updated_at
+		`SELECT id, COALESCE(email, '') as email, name, COALESCE(avatar_url, '') as avatar_url, provider, provider_id, created_at, updated_at
 		 FROM users WHERE email=$1`, email,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.Provider, &u.ProviderID, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
@@ -84,13 +80,14 @@ func (r *UserRepo) CreateGuest() (*model.User, error) {
 	guestID := randomHex(16)
 	u := &model.User{
 		Name:       "游客",
+		Email:      "guest-" + guestID + "@local",
 		Provider:   "guest",
 		ProviderID: guestID,
 	}
 	err := r.db.QueryRow(
-		`INSERT INTO users (name, provider, provider_id) VALUES ($1,$2,$3)
+		`INSERT INTO users (name, email, provider, provider_id) VALUES ($1,$2,$3,$4)
 		 RETURNING id, email, created_at, updated_at`,
-		u.Name, u.Provider, u.ProviderID,
+		u.Name, u.Email, u.Provider, u.ProviderID,
 	).Scan(&u.ID, &u.Email, &u.CreatedAt, &u.UpdatedAt)
 	return u, err
 }
@@ -98,7 +95,7 @@ func (r *UserRepo) CreateGuest() (*model.User, error) {
 func (r *UserRepo) FindByGuestID(guestID string) (*model.User, error) {
 	u := &model.User{}
 	err := r.db.QueryRow(
-		`SELECT id, email, name, avatar_url, provider, provider_id, created_at, updated_at
+		`SELECT id, COALESCE(email, '') as email, name, COALESCE(avatar_url, '') as avatar_url, provider, provider_id, created_at, updated_at
 		 FROM users WHERE provider='guest' AND provider_id=$1`, guestID,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.Provider, &u.ProviderID, &u.CreatedAt, &u.UpdatedAt)
 	if err == sql.ErrNoRows {
@@ -116,24 +113,16 @@ func (r *UserRepo) SaveVerificationCode(email, code string) error {
 }
 
 func (r *UserRepo) VerifyCode(email, code string) (bool, error) {
-	var used bool
-	err := r.db.QueryRow(
-		`SELECT used FROM verification_codes
-		 WHERE email=$1 AND code=$2 AND expires_at > now()
-		 ORDER BY created_at DESC LIMIT 1`,
+	res, err := r.db.Exec(
+		`UPDATE verification_codes SET used=true
+		 WHERE email=$1 AND code=$2 AND expires_at > now() AND used=false`,
 		email, code,
-	).Scan(&used)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
+	)
 	if err != nil {
 		return false, err
 	}
-	if used {
-		return false, nil
-	}
-	_, err = r.db.Exec(`UPDATE verification_codes SET used=true WHERE email=$1 AND code=$2`, email, code)
-	return !used, err
+	n, _ := res.RowsAffected()
+	return n > 0, nil
 }
 
 func (r *UserRepo) LastCodeSentAt(email string) (time.Time, error) {

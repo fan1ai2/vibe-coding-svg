@@ -1,55 +1,55 @@
-# [Project Name] Constitution
+# [项目名称] 章程
 
-## §1 Architecture Principles
+## §1 架构原则
 
-- DDD tactical layering: `domain/` → `service/` → `infrastructure/` → `interfaces/`
-- Dependency direction: `interfaces → service → domain ← infrastructure`
-- `domain/` MUST NOT import any external library (database drivers, Redis, S3, HTTP frameworks) — standard library and self-defined interfaces only
-- `service/` depends ONLY on `domain/`
-- Each bounded context is an independent package
-- Dependency injection happens exclusively in `cmd/server/main.go`
+- DDD 战术分层：`domain/` → `service/` → `infrastructure/` → `interfaces/`
+- 依赖方向：`interfaces → service → domain ← infrastructure`
+- `domain/` **绝对禁止**引入任何外部库（数据库驱动、Redis、S3、HTTP 框架）—— 仅允许标准库和自定义接口
+- `service/` **仅**依赖 `domain/`
+- 每个限界上下文是一个独立的包
+- 依赖注入**仅**在 `cmd/server/main.go` 中进行
 
-## §2 Quality Gate Standards
+## §2 质量关卡标准
 
-- Build: zero errors (`go build ./...` + `tsc -b`)
-- Test: all tests pass (`go test ./...` + frontend test runner)
-- Coverage: domain layer test coverage ≥ 80%
-- Integration: at least 1 happy-path test per API endpoint
-- All Speckit checklist items checked before merge
+- 构建：零错误（`go build ./...` + `tsc -b`）
+- 测试：全部测试通过（`go test ./...` + 前端测试运行器）
+- 覆盖率：domain 层测试覆盖率 ≥ 80%
+- 集成测试：每个 API 端点至少 1 个 happy-path 测试
+- 合并前所有 Speckit checklist 项必须勾选完毕
 
-## §3 Technology Stack
+## §3 技术栈
 
-<!-- Fill in with actual project stack. Example: -->
-<!-- Backend: Go 1.25 + Gin -->
-<!-- Frontend: React 19 + TypeScript 5 + Vite -->
-<!-- Database: PostgreSQL 16 -->
-<!-- Cache/Queue: Redis 7 -->
-<!-- Storage: MinIO (S3-compatible) -->
-<!-- Container: Docker Compose -->
+<!-- 请填写实际项目技术栈。示例：-->
+<!-- 后端：Go 1.25 + Gin -->
+<!-- 前端：React 19 + TypeScript 5 + Vite -->
+<!-- 数据库：PostgreSQL 16 -->
+<!-- 缓存/队列：Redis 7 -->
+<!-- 存储：MinIO（兼容 S3）-->
+<!-- 容器：Docker Compose -->
 
-| Layer | Technology | Constraint |
+| 层 | 技术 | 约束 |
 |-------|-----------|------------|
-| Backend | <!-- fill --> | <!-- fill --> |
-| Frontend | <!-- fill --> | <!-- fill --> |
-| Database | <!-- fill --> | <!-- fill --> |
-| Cache/Queue | <!-- fill --> | <!-- fill --> |
-| Storage | <!-- fill --> | <!-- fill --> |
+| 后端 | <!-- 填写 --> | <!-- 填写 --> |
+| 前端 | <!-- 填写 --> | <!-- 填写 --> |
+| 数据库 | <!-- 填写 --> | <!-- 填写 --> |
+| 缓存/队列 | <!-- 填写 --> | <!-- 填写 --> |
+| 存储 | <!-- 填写 --> | <!-- 填写 --> |
 
-## §4 Workflow Rules
+## §4 工作流规则
 
-- Every feature MUST have a written spec (`docs/superpowers/specs/*.spec.md`) before any code
-- Spec → TaskMaster task breakdown → Speckit clarify → Speckit plan → TDD implement → QA gate
-- No phase may be skipped
-- All phase artifacts MUST be git committed
-- Implementation follows TDD: QA writes tests first (red), Dev writes implementation (green)
-- Domain layer is built first; infrastructure layer is built last
+- 每个功能**必须**在编写任何代码之前有书面规格（`docs/superpowers/specs/*.spec.md`）
+- 规格 → TaskMaster 任务拆解 → Speckit 澄清 → Speckit 计划 → TDD 实现 → QA 关卡
+- 不得跳过任何阶段
+- 所有阶段产物**必须** git 提交
+- 实现遵循 TDD：QA 先写测试（红灯），Dev 写实现（绿灯）
+- Domain 层优先构建，Infrastructure 层最后构建
 
-## §5 Prohibitions
+## §5 禁令
 
-- No code before spec
-- No external imports in `domain/` layer
-- No cross-bounded-context PRs (one BC per PR)
-- No "incidental refactoring" without a spec
-- No YAGNI abstractions — three similar lines is fine until a pattern proves itself
+- 禁止在规格之前编写代码
+- 禁止 `domain/` 层引入外部依赖
+- 禁止跨限界上下文的 PR（每个 PR 一个 BC）
+- 禁止无规格的"顺手重构"
+- 禁止 YAGNI 抽象 —— 三个相似行在模式验证之前完全没问题
 
-**Version**: 1.0.0 | **Ratified**: <!-- fill date --> | **Last Amended**: <!-- fill date -->
+**版本**：1.0.0 | **批准日期**：<!-- 填写日期 --> | **最后修订**：<!-- 填写日期 -->

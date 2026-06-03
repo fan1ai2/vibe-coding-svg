@@ -9,13 +9,13 @@ const sampleSvg = `<svg xmlns="http://www.w3.org/2000/svg">
 </svg>`
 
 describe('stripXss', () => {
-  it('removes script tags', () => {
+  it('移除 script 标签', () => {
     const input = '<svg><script>alert("xss")</script><rect/></svg>'
     const result = stripXss(input)
     expect(result).not.toContain('script')
     expect(result).toContain('<rect')
   })
-  it('removes on* event attributes', () => {
+  it('移除 on* 事件属性', () => {
     const input = '<circle onclick="alert(1)" fill="#FF0000"/>'
     const result = stripXss(input)
     expect(result).not.toContain('onclick')
@@ -24,25 +24,25 @@ describe('stripXss', () => {
 })
 
 describe('parseSvg', () => {
-  it('parses valid SVG string to Document', () => {
+  it('将有效 SVG 字符串解析为 Document', () => {
     const doc = parseSvg(sampleSvg)
     expect(doc.querySelectorAll('rect').length).toBe(2)
     expect(doc.querySelectorAll('circle').length).toBe(1)
   })
-  it('throws on invalid SVG', () => {
+  it('无效 SVG 抛出异常', () => {
     expect(() => parseSvg('not an svg')).toThrow()
   })
 })
 
 describe('buildColorMap', () => {
-  it('maps colors to elements', () => {
+  it('将颜色映射到对应元素', () => {
     const doc = parseSvg(sampleSvg)
     const map = buildColorMap(doc)
     expect(map.get('#FF0000')?.size).toBe(2)
     expect(map.get('#0000FF')?.size).toBe(1)
     expect(map.get('#00FF00')?.size).toBe(1)
   })
-  it('excludes "none" and "transparent"', () => {
+  it('排除 "none" 和 "transparent"', () => {
     const doc = parseSvg(sampleSvg)
     const map = buildColorMap(doc)
     expect(map.has('none')).toBe(false)

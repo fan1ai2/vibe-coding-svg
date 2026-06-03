@@ -7,7 +7,7 @@ interface AlphaSliderProps {
 export default function AlphaSlider({ alpha, color, onChange }: AlphaSliderProps) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">Alpha ({alpha}%)</label>
+      <label className="text-xs font-medium text-gray-500">透明度 ({alpha}%)</label>
       <div
         className="w-full h-3 rounded-full relative cursor-pointer"
         style={{

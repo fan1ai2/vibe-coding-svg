@@ -23,6 +23,11 @@ type Config struct {
 	SMTPUser       string
 	SMTPPassword   string
 	SMTPFrom       string
+	Neo4jURI       string
+	Neo4jPassword  string
+	AiBaseURL      string
+	AiApiKey       string
+	AiModel        string
 }
 
 func Load() *Config {
@@ -44,6 +49,11 @@ func Load() *Config {
 		SMTPUser:       os.Getenv("SMTP_USER"),
 		SMTPPassword:   os.Getenv("SMTP_PASSWORD"),
 		SMTPFrom:       os.Getenv("SMTP_FROM"),
+		Neo4jURI:       envOr("NEO4J_URI", "bolt://neo4j:7687"),
+		Neo4jPassword:  require("NEO4J_PASSWORD"),
+		AiBaseURL:      envOr("AI_BASE_URL", "https://api.openai.com/v1"),
+		AiApiKey:       os.Getenv("AI_API_KEY"),
+		AiModel:        envOr("AI_MODEL", "gpt-4o"),
 	}
 }
 

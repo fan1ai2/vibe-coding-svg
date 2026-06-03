@@ -91,13 +91,22 @@ func (s *AuthService) getGithubAccessToken(code string) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("github token endpoint returned status %d", resp.StatusCode)
+	}
+
 	var result struct {
 		AccessToken string `json:"access_token"`
 		Error       string `json:"error_description"`
 	}
-	json.NewDecoder(resp.Body).Decode(&result)
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode github token response: %w", err)
+	}
 	if result.Error != "" {
 		return "", errors.New(result.Error)
+	}
+	if result.AccessToken == "" {
+		return "", errors.New("github returned empty access_token")
 	}
 	return result.AccessToken, nil
 }
@@ -129,7 +138,7 @@ func firstNonEmpty(a, b string) string {
 	return b
 }
 
-// GuestLogin creates or restores a guest user and returns a JWT.
+// GuestLogin 创建或恢复访客用户并返回 JWT
 func (s *AuthService) GuestLogin(guestID string) (*model.User, string, string, error) {
 	var user *model.User
 	var newGuestID string
@@ -159,7 +168,7 @@ func (s *AuthService) GuestLogin(guestID string) (*model.User, string, string, e
 	return user, token, newGuestID, nil
 }
 
-// EmailSendCode generates a 6-digit code and sends it via SMTP.
+// EmailSendCode 生成 6 位验证码并通过 SMTP 发送
 func (s *AuthService) EmailSendCode(email string) error {
 	lastSent, err := s.userRepo.LastCodeSentAt(email)
 	if err != nil {
@@ -184,7 +193,7 @@ func (s *AuthService) EmailSendCode(email string) error {
 	return nil
 }
 
-// EmailVerify checks the verification code and logs in / registers the user.
+// EmailVerify 验证邮箱验证码并登录/注册用户
 func (s *AuthService) EmailVerify(email, code string) (*model.User, string, error) {
 	valid, err := s.userRepo.VerifyCode(email, code)
 	if err != nil {

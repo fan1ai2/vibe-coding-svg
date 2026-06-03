@@ -34,21 +34,21 @@ func (h *HealthHandler) Check(c *gin.Context) {
 
 	checks := map[string]string{}
 
-	// PostgreSQL
+	// PostgreSQL 数据库
 	if err := h.db.PingContext(ctx); err != nil {
 		checks["postgres"] = "down: " + err.Error()
 	} else {
 		checks["postgres"] = "ok"
 	}
 
-	// Redis
+	// Redis 缓存
 	if err := h.redisClient.Ping(ctx).Err(); err != nil {
 		checks["redis"] = "down: " + err.Error()
 	} else {
 		checks["redis"] = "ok"
 	}
 
-	// MinIO
+	// MinIO 对象存储
 	_, err := h.minioClient.ListBuckets(ctx)
 	if err != nil {
 		checks["minio"] = "down: " + err.Error()

@@ -1,21 +1,21 @@
-# Email Auth + Guest Mode Implementation Plan
+# Email Auth + Guest Mode 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化工作者：** 必需子技能： 使用 superpowers:subagent-driven-development (推荐) 或 superpowers:executing-plans 按任务逐步实现此计划. 步骤使用复选框 (`- [ ]`) 语法进行跟踪.
 
-**Goal:** Add three login paths (guest mode, email verification-code, GitHub OAuth) with guest 3-conversion quota and SMTP email verification.
+**目标：** Add three login paths (guest mode, email verification-code, GitHub OAuth) with guest 3-conversion quota and SMTP email verification.
 
-**Architecture:** Guest users are regular User rows with provider="guest", reusing existing JWT middleware and quota infrastructure. Email auth uses SMTP-sent 6-digit verification codes (5min TTL). Frontend enforces guest quota in localStorage; backend hard-caps at 3 lifetime conversions for guest provider.
+**架构：** Guest users are regular User rows with provider="guest", reusing existing JWT middleware and quota infrastructure. Email auth uses SMTP-sent 6-digit verification codes (5min TTL). Frontend enforces guest quota in localStorage; backend hard-caps at 3 lifetime conversions for guest provider.
 
-**Tech Stack:** Go + Gin + PostgreSQL + SMTP (net/smtp), React + TypeScript + Tailwind
+**技术栈：** Go + Gin + PostgreSQL + SMTP (net/smtp), React + TypeScript + Tailwind
 
 ---
 
-### Task 1: Add SMTP config fields
+### 任务 1： Add SMTP config fields
 
-**Files:**
-- Modify: `server/internal/config/config.go`
+**涉及文件：**
+- 修改：`server/internal/config/config.go`
 
-- [ ] **Step 1: Add SMTP fields to Config struct and Load()**
+- [ ] **步骤 1：add SMTP fields to Config struct and Load()**
 
 Replace the Config struct to add SMTP fields:
 
@@ -51,14 +51,14 @@ SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 SMTPFrom:     os.Getenv("SMTP_FROM"),
 ```
 
-Note: SMTP fields use `os.Getenv` (not `require`) so they're optional — the server starts without SMTP for dev environments.
+Note: SMTP fields use `os.Getenv` (not `require`) so they're optional —— the server starts without SMTP for dev environments.
 
-- [ ] **Step 2: Verify code compiles**
+- [ ] **步骤 2：verify code compiles**
 
 Run: `cd server && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/config/config.go
@@ -67,12 +67,12 @@ git commit -m "feat: add SMTP config fields"
 
 ---
 
-### Task 2: Create email sending service
+### 任务 2： Create email sending service
 
-**Files:**
-- Create: `server/internal/service/email.go`
+**涉及文件：**
+- 新建：`server/internal/service/email.go`
 
-- [ ] **Step 1: Write the email service**
+- [ ] **步骤 1：write the email service**
 
 ```go
 package service
@@ -143,12 +143,12 @@ func (s *EmailService) SendVerificationCode(to, code string) error {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/service/email.go
@@ -157,15 +157,15 @@ git commit -m "feat: add SMTP email verification code service"
 
 ---
 
-### Task 3: Create database migrations
+### 任务 3： Create database migrations
 
-**Files:**
-- Create: `server/migrations/004_verification_codes.up.sql`
-- Create: `server/migrations/004_verification_codes.down.sql`
-- Create: `server/migrations/005_guest_provider.up.sql`
-- Create: `server/migrations/005_guest_provider.down.sql`
+**涉及文件：**
+- 新建：`server/migrations/004_verification_codes.up.sql`
+- 新建：`server/migrations/004_verification_codes.down.sql`
+- 新建：`server/migrations/005_guest_provider.up.sql`
+- 新建：`server/migrations/005_guest_provider.down.sql`
 
-- [ ] **Step 1: Create verification_codes migration (up)**
+- [ ] **步骤 1：create verification_codes migration (up)**
 
 Write `server/migrations/004_verification_codes.up.sql`:
 
@@ -181,7 +181,7 @@ CREATE TABLE verification_codes (
 CREATE INDEX idx_verification_codes_email_code ON verification_codes(email, code);
 ```
 
-- [ ] **Step 2: Create verification_codes migration (down)**
+- [ ] **步骤 2：create verification_codes migration (down)**
 
 Write `server/migrations/004_verification_codes.down.sql`:
 
@@ -189,7 +189,7 @@ Write `server/migrations/004_verification_codes.down.sql`:
 DROP TABLE IF EXISTS verification_codes;
 ```
 
-- [ ] **Step 3: Create guest provider migration (up)**
+- [ ] **步骤 3：create guest provider migration (up)**
 
 Write `server/migrations/005_guest_provider.up.sql`:
 
@@ -199,7 +199,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_provider_unique ON users(provider, provi
     WHERE provider != 'guest';
 ```
 
-- [ ] **Step 4: Create guest provider migration (down)**
+- [ ] **步骤 4：create guest provider migration (down)**
 
 Write `server/migrations/005_guest_provider.down.sql`:
 
@@ -208,7 +208,7 @@ DROP INDEX IF EXISTS users_provider_unique;
 ALTER TABLE users ADD CONSTRAINT users_provider_provider_id_key UNIQUE (provider, provider_id);
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add server/migrations/
@@ -217,12 +217,12 @@ git commit -m "feat: add verification_codes table and relax guest user constrain
 
 ---
 
-### Task 4: Add repo methods for verification codes and user queries
+### 任务 4： Add repo methods for verification codes and user queries
 
-**Files:**
-- Modify: `server/internal/repo/user.go`
+**涉及文件：**
+- 修改：`server/internal/repo/user.go`
 
-- [ ] **Step 1: Add FindByEmail, CreateGuest, and verification code methods**
+- [ ] **步骤 1：add FindByEmail, CreateGuest, and verification code methods**
 
 Add to `server/internal/repo/user.go`:
 
@@ -334,12 +334,12 @@ func randomHex(n int) string {
 
 Note: The import block needs `"crypto/rand"`, `"encoding/hex"`, and `"time"` added. The existing `FindByProvider`, `Create`, `UpsertByProvider`, `FindByID` methods remain unchanged. `nullIfEmpty` helper also remains.
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/repo/user.go
@@ -348,12 +348,12 @@ git commit -m "feat: add repo methods for guest, email auth, and verification co
 
 ---
 
-### Task 5: Add auth service methods (GuestLogin, EmailSendCode, EmailVerify)
+### 任务 5： Add auth service methods (GuestLogin, EmailSendCode, EmailVerify)
 
-**Files:**
-- Modify: `server/internal/service/auth.go`
+**涉及文件：**
+- 修改：`server/internal/service/auth.go`
 
-- [ ] **Step 1: Add new methods to AuthService**
+- [ ] **步骤 1：add new methods to AuthService**
 
 Add a new file or append to existing `server/internal/service/auth.go`. Since AuthService needs new dependencies (EmailService, UserRepo methods), update the struct and add methods:
 
@@ -485,14 +485,14 @@ func generateCode() (string, error) {
 
 Note: The import block already has `"time"`, `"fmt"`, `"net/http"`, `"encoding/json"`, `"errors"`, `"github.com/golang-jwt/jwt/v5"`, and the internal packages. Need to add `"crypto/rand"`, `"math/big"`, `"strings"`. Keep all existing methods (GenerateJWT, ExchangeGithubCode, getGithubAccessToken, getGithubUser, FindByID, firstNonEmpty) unchanged.
 
-The `NewAuthService` signature changed — this will break the caller in `router.go` (handled in Task 7).
+The `NewAuthService` signature changed —— this will break the caller in `router.go` (handled in Task 7).
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: error in router.go (NewAuthService args mismatch) — expected, will fix in Task 7
+预期结果： error in router.go (NewAuthService args mismatch) —— expected, will fix in Task 7
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/service/auth.go
@@ -501,12 +501,12 @@ git commit -m "feat: add GuestLogin, EmailSendCode, EmailVerify service methods"
 
 ---
 
-### Task 6: Add auth handler methods
+### 任务 6： Add auth handler methods
 
-**Files:**
-- Modify: `server/internal/handler/auth.go`
+**涉及文件：**
+- 修改：`server/internal/handler/auth.go`
 
-- [ ] **Step 1: Add handler methods**
+- [ ] **步骤 1：add handler methods**
 
 Add three new handler methods and update `AuthHandler`:
 
@@ -577,12 +577,12 @@ func (h *AuthHandler) EmailVerify(c *gin.Context) {
 }
 ```
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: error in router.go (NewAuthService args + new handlers not wired) — expected, will fix next
+预期结果： error in router.go (NewAuthService args + new handlers not wired) —— expected, will fix next
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/handler/auth.go
@@ -591,13 +591,13 @@ git commit -m "feat: add guest login, email send-code, email verify handlers"
 
 ---
 
-### Task 7: Update router and add guest quota enforcement in conversion service
+### 任务 7： Update router and add guest quota enforcement in conversion service
 
-**Files:**
-- Modify: `server/internal/router/router.go`
-- Modify: `server/internal/service/conversion.go`
+**涉及文件：**
+- 修改：`server/internal/router/router.go`
+- 修改：`server/internal/service/conversion.go`
 
-- [ ] **Step 1: Update router.go — wire new dependencies and add routes**
+- [ ] **步骤 1：update router.go —— wire new dependencies and add routes**
 
 Update `server/internal/router/router.go`. The changes:
 1. Create EmailService
@@ -634,7 +634,7 @@ auth := api.Group("/auth")
 }
 ```
 
-- [ ] **Step 2: Add guest quota enforcement in conversion.go**
+- [ ] **步骤 2：add guest quota enforcement in conversion.go**
 
 In `server/internal/service/conversion.go`, add the guest quota check at the start of `Enqueue()`, before the file extension parsing:
 
@@ -658,7 +658,7 @@ import (
 )
 
 func (s *ConversionService) checkGuestQuota(userID string) error {
-	// Only check for guest users — query the provider by user_id
+	// Only check for guest users —— query the provider by user_id
 	// Use the existing repo's DB connection
 	count, err := s.repo.CountConversionsByUser(userID)
 	if err != nil {
@@ -671,7 +671,7 @@ func (s *ConversionService) checkGuestQuota(userID string) error {
 }
 ```
 
-Wait — we need `CountConversionsByUser` and also need to know if user is guest. Let's add a simpler approach: add a method to ConversionRepo.
+Wait —— we need `CountConversionsByUser` and also need to know if user is guest. Let's add a simpler approach: add a method to ConversionRepo.
 
 Actually, let's add to `repo/conversion.go`:
 
@@ -807,7 +807,7 @@ func (r *ConversionRepo) CountByUserID(userID string) (int, error) {
 }
 ```
 
-- [ ] **Step 2: Add guest quota check in Enqueue**
+- [ ] **步骤 2：add guest quota check in Enqueue**
 
 In `server/internal/service/conversion.go`, add at the beginning of the `Enqueue` method (after the opening brace, before `ext := filepath.Ext(filename)`):
 
@@ -828,16 +828,16 @@ In `server/internal/service/conversion.go`, add at the beginning of the `Enqueue
 	}
 ```
 
-- [ ] **Step 3: Update router.go**
+- [ ] **步骤 3：update router.go**
 
-As described above — wire EmailService, update NewAuthService call, add 3 routes.
+As described above —— wire EmailService, update NewAuthService call, add 3 routes.
 
-- [ ] **Step 4: Verify compilation**
+- [ ] **步骤 4：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add server/internal/repo/conversion.go server/internal/service/conversion.go server/internal/router/router.go
@@ -846,13 +846,13 @@ git commit -m "feat: wire email/guest routes and add guest quota enforcement"
 
 ---
 
-### Task 8: Update Docker and env configs
+### 任务 8： Update Docker and env configs
 
-**Files:**
-- Modify: `docker-compose.yml`
-- Modify: `.env.example`
+**涉及文件：**
+- 修改：`docker-compose.yml`
+- 修改：`.env.example`
 
-- [ ] **Step 1: Add SMTP env vars to docker-compose.yml**
+- [ ] **步骤 1：add SMTP env vars to docker-compose.yml**
 
 In the `api` service environment section, add:
 
@@ -864,7 +864,7 @@ In the `api` service environment section, add:
       SMTP_FROM: ${SMTP_FROM:-}
 ```
 
-- [ ] **Step 2: Add SMTP vars to .env.example**
+- [ ] **步骤 2：add SMTP vars to .env.example**
 
 Append to `.env.example`:
 
@@ -877,7 +877,7 @@ Append to `.env.example`:
 # SMTP_FROM=noreply@yourdomain.com
 ```
 
-- [ ] **Step 3: Add SMTP vars to existing .env**
+- [ ] **步骤 3：add SMTP vars to existing .env**
 
 Append to `.env`:
 
@@ -890,7 +890,7 @@ SMTP_PASSWORD=
 SMTP_FROM=
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add docker-compose.yml .env.example .env
@@ -899,12 +899,12 @@ git commit -m "feat: add SMTP configuration to docker and env files"
 
 ---
 
-### Task 9: Update frontend API client
+### 任务 9： Update frontend API client
 
-**Files:**
-- Modify: `web/src/api/client.ts`
+**涉及文件：**
+- 修改：`web/src/api/client.ts`
 
-- [ ] **Step 1: Add new API methods and types**
+- [ ] **步骤 1：add new API methods and types**
 
 Add to `web/src/api/client.ts`:
 
@@ -943,12 +943,12 @@ export const auth = {
 };
 ```
 
-- [ ] **Step 2: Verify TypeScript compilation**
+- [ ] **步骤 2：verify TypeScript compilation**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors (or only pre-existing errors unrelated to our changes)
+预期结果： no errors (or only pre-existing errors unrelated to our changes)
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/api/client.ts
@@ -957,12 +957,12 @@ git commit -m "feat: add guest and email auth API methods and User type"
 
 ---
 
-### Task 10: Create EmailLoginModal component
+### 任务 10： Create EmailLoginModal component
 
-**Files:**
-- Create: `web/src/components/EmailLoginModal.tsx`
+**涉及文件：**
+- 新建：`web/src/components/EmailLoginModal.tsx`
 
-- [ ] **Step 1: Write the component**
+- [ ] **步骤 1：write the component**
 
 ```tsx
 import { useState, useRef, useEffect } from 'react';
@@ -1128,12 +1128,12 @@ export default function EmailLoginModal({ open, onClose, onSuccess }: Props) {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript compilation**
+- [ ] **步骤 2：verify TypeScript compilation**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/components/EmailLoginModal.tsx
@@ -1142,13 +1142,13 @@ git commit -m "feat: add EmailLoginModal with 2-step code verification"
 
 ---
 
-### Task 11: Create UsageLimitModal and GuestBanner components
+### 任务 11： Create UsageLimitModal and GuestBanner components
 
-**Files:**
-- Create: `web/src/components/UsageLimitModal.tsx`
-- Create: `web/src/components/GuestBanner.tsx`
+**涉及文件：**
+- 新建：`web/src/components/UsageLimitModal.tsx`
+- 新建：`web/src/components/GuestBanner.tsx`
 
-- [ ] **Step 1: Write UsageLimitModal**
+- [ ] **步骤 1：write UsageLimitModal**
 
 ```tsx
 interface Props {
@@ -1194,7 +1194,7 @@ export default function UsageLimitModal({ open, onLogin, onClose }: Props) {
 }
 ```
 
-- [ ] **Step 2: Write GuestBanner**
+- [ ] **步骤 2：write GuestBanner**
 
 ```tsx
 interface Props {
@@ -1208,7 +1208,7 @@ export default function GuestBanner({ remaining, onLogin }: Props) {
   return (
     <div className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-2.5 text-sm">
       <span className="text-amber-700">
-        试用模式 — 还剩 <strong>{remaining}</strong> 次免费转换
+        试用模式 —— 还剩 <strong>{remaining}</strong> 次免费转换
       </span>
       <button
         onClick={onLogin}
@@ -1221,12 +1221,12 @@ export default function GuestBanner({ remaining, onLogin }: Props) {
 }
 ```
 
-- [ ] **Step 3: Verify TypeScript compilation**
+- [ ] **步骤 3：verify TypeScript compilation**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add web/src/components/UsageLimitModal.tsx web/src/components/GuestBanner.tsx
@@ -1235,12 +1235,12 @@ git commit -m "feat: add UsageLimitModal and GuestBanner components"
 
 ---
 
-### Task 12: Update AuthContext for guest and email login support
+### 任务 12： Update AuthContext for guest and email login support
 
-**Files:**
-- Modify: `web/src/context/AuthContext.tsx`
+**涉及文件：**
+- 修改：`web/src/context/AuthContext.tsx`
 
-- [ ] **Step 1: Rewrite AuthContext**
+- [ ] **步骤 1：rewrite AuthContext**
 
 ```tsx
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
@@ -1337,12 +1337,12 @@ export function useAuth() {
 
 Note: The `/auth/me` response format is `{ user: User }` but the handler returns the user directly (`c.JSON(http.StatusOK, user)`). Need to check the current me handler's response format and the current AuthContext's usage. Let's keep backward-compatible: try `data.user` first, fall back to `data` as User.
 
-- [ ] **Step 2: Verify TypeScript**
+- [ ] **步骤 2：verify TypeScript**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/context/AuthContext.tsx
@@ -1351,12 +1351,12 @@ git commit -m "feat: add guest login, email success callback, and conversion tra
 
 ---
 
-### Task 13: Update LandingPage with new layout
+### 任务 13： Update LandingPage with new layout
 
-**Files:**
-- Modify: `web/src/pages/LandingPage.tsx`
+**涉及文件：**
+- 修改：`web/src/pages/LandingPage.tsx`
 
-- [ ] **Step 1: Rewrite LandingPage**
+- [ ] **步骤 1：rewrite LandingPage**
 
 Replace the Hero section button with the three stacked options:
 
@@ -1450,12 +1450,12 @@ export default function LandingPage() {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript**
+- [ ] **步骤 2：verify TypeScript**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/pages/LandingPage.tsx
@@ -1464,12 +1464,12 @@ git commit -m "feat: add guest/email/github login buttons to landing page"
 
 ---
 
-### Task 14: Add guest banner and usage limit to ConvertPage
+### 任务 14： Add guest banner and usage limit to ConvertPage
 
-**Files:**
-- Modify: `web/src/pages/ConvertPage.tsx`
+**涉及文件：**
+- 修改：`web/src/pages/ConvertPage.tsx`
 
-- [ ] **Step 1: Rewrite ConvertPage with guest banner and usage limit**
+- [ ] **步骤 1：rewrite ConvertPage with guest banner and usage limit**
 
 Replace the entire `web/src/pages/ConvertPage.tsx`:
 
@@ -1570,12 +1570,12 @@ export default function ConvertPage() {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript**
+- [ ] **步骤 2：verify TypeScript**
 
 Run: `cd web && npx tsc --noEmit`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/pages/ConvertPage.tsx
@@ -1584,12 +1584,12 @@ git commit -m "feat: integrate guest banner and usage limit into ConvertPage"
 
 ---
 
-### Task 15: Add verification code cleanup goroutine to main.go
+### 任务 15： Add verification code cleanup goroutine to main.go
 
-**Files:**
-- Modify: `server/cmd/api/main.go`
+**涉及文件：**
+- 修改：`server/cmd/api/main.go`
 
-- [ ] **Step 1: Start cleanup goroutine in main**
+- [ ] **步骤 1：start cleanup goroutine in main**
 
 After the "server starting" log line, add:
 
@@ -1639,12 +1639,12 @@ go func() {
 
 Add `"time"` to imports.
 
-- [ ] **Step 2: Verify compilation**
+- [ ] **步骤 2：verify compilation**
 
 Run: `cd server && go build ./...`
-Expected: no errors
+预期结果： no errors
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add server/internal/router/router.go
@@ -1653,23 +1653,23 @@ git commit -m "feat: add verification code cleanup goroutine"
 
 ---
 
-### Task 16: Final integration verification
+### 任务 16： Final integration verification
 
-**Files:** all modified files
+**涉及文件：** all modified files
 
-- [ ] **Step 1: Run full Go build**
+- [ ] **步骤 1：run full Go build**
 
 ```bash
 cd server && go build ./...
 ```
 
-- [ ] **Step 2: Run full TypeScript check**
+- [ ] **步骤 2：run full TypeScript check**
 
 ```bash
 cd web && npx tsc --noEmit
 ```
 
-- [ ] **Step 3: Final commit if any fixups**
+- [ ] **步骤 3：final commit if any fixups**
 
 ```bash
 git add -A

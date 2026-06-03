@@ -47,7 +47,7 @@ export default function SBPanel({ hue, saturation, brightness, onChange }: SBPan
 
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">Saturation × Brightness</label>
+      <label className="text-xs font-medium text-gray-500">饱和度 × 亮度</label>
       <div
         ref={panelRef}
         onMouseDown={onMouseDown}

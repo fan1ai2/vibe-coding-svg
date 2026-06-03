@@ -6,7 +6,7 @@ interface HueSliderProps {
 export default function HueSlider({ hue, onChange }: HueSliderProps) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">Hue</label>
+      <label className="text-xs font-medium text-gray-500">色相</label>
       <input
         type="range"
         min={0}

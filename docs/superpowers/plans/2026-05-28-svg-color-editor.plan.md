@@ -1,28 +1,28 @@
-# SVG Color Editor Implementation Plan
+# SVG Color Editor 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向自动化工作者：** 必需子技能： 使用 superpowers:subagent-driven-development (推荐) 或 superpowers:executing-plans 按任务逐步实现此计划. 步骤使用复选框 (`- [ ]`) 语法进行跟踪.
 
-**Goal:** Build an SVG color editing page at `/workspace/editor` — paste/upload SVG, click elements, pick colors, replace fill/stroke, undo/redo, global theme replace, export.
+**目标：** 构建 `/workspace/editor` 页面的 SVG 颜色编辑器 —— 粘贴/上传 SVG、点击选中元素、选取颜色、替换 fill/stroke、撤销/重做、全局主题替换、导出。
 
-**Architecture:** Two-column layout. Left: SvgCanvas renders interactive SVG. Right: SidePanel with ElementInspector, ColorPicker (HueSlider + SBPanel + AlphaSlider + ColorPreview + ColorInput), PresetColors, ThemeReplacer, EditorToolbar. Domain layer (svgParser, colorUtils, applyColor) is pure TypeScript with zero React dependency — testable in isolation. ColorPicker is built from scratch with native DOM events and CSS gradients.
+**架构：** 两栏布局。左侧：SvgCanvas 渲染可交互 SVG。右侧：SidePanel 包含 ElementInspector、ColorPicker（HueSlider + SBPanel + AlphaSlider + ColorPreview + ColorInput）、PresetColors、ThemeReplacer、EditorToolbar。Domain 层（svgParser、colorUtils、applyColor）为纯 TypeScript，零 React 依赖——可独立测试。ColorPicker 从零构建，使用原生 DOM 事件和 CSS 渐变。
 
-**Tech Stack:** React 19, TypeScript 5, Tailwind CSS 3, Vite 6, Vitest + @testing-library/react, DOMParser (browser native), no npm color libraries.
+**技术栈：** React 19, TypeScript 5, Tailwind CSS 3, Vite 6, Vitest + @testing-library/react, DOMParser (browser native), no npm color libraries.
 
 ---
 
-### Task 0: Vitest + Testing Library Setup
+### 任务 0： Vitest + Testing Library Setup
 
-**Files:**
-- Modify: `web/package.json`
-- Create: `web/vitest.config.ts`
+**涉及文件：**
+- 修改：`web/package.json`
+- 新建：`web/vitest.config.ts`
 
-- [ ] **Step 1: Install vitest and testing-library**
+- [ ] **步骤 1：安装 vitest 和 testing-library**
 
 ```bash
 cd web && npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
 ```
 
-- [ ] **Step 2: Create vitest.config.ts**
+- [ ] **步骤 2：创建 vitest.config.ts**
 
 Create `web/vitest.config.ts`:
 ```typescript
@@ -39,14 +39,14 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 3: Create test setup file**
+- [ ] **步骤 3：创建测试 setup 文件**
 
 Create `web/src/test-setup.ts`:
 ```typescript
 import '@testing-library/jest-dom/vitest'
 ```
 
-- [ ] **Step 4: Add test script to package.json**
+- [ ] **步骤 4：向 package.json 添加 test 脚本**
 
 In `web/package.json`, add to `"scripts"`:
 ```json
@@ -54,14 +54,14 @@ In `web/package.json`, add to `"scripts"`:
 "test:watch": "vitest"
 ```
 
-- [ ] **Step 5: Run tests to verify setup**
+- [ ] **步骤 5：运行测试验证环境搭建**
 
 ```bash
 cd web && npx vitest --run
 ```
-Expected: "No test files found" (clean exit, no config errors)
+预期结果： "未找到测试文件"（正常退出，无配置错误）
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：commit**
 
 ```bash
 git add web/package.json web/package-lock.json web/vitest.config.ts web/src/test-setup.ts
@@ -70,12 +70,12 @@ git commit -m "chore: add vitest + testing-library setup"
 
 ---
 
-### Task 1: Shared Types
+### 任务 1： Shared Types
 
-**Files:**
-- Create: `web/src/features/svg-editor/domain/types.ts`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/domain/types.ts`
 
-- [ ] **Step 1: Create types.ts**
+- [ ] **步骤 1：创建 types.ts**
 
 ```typescript
 export type ColorMode = 'fill' | 'stroke'
@@ -110,7 +110,7 @@ export const COLORABLE_TAGS = new Set([
 ])
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/features/svg-editor/domain/types.ts
@@ -119,13 +119,13 @@ git commit -m "feat: add SVG editor shared types"
 
 ---
 
-### Task 2: Color Conversion Utilities
+### 任务 2： Color Conversion Utilities
 
-**Files:**
-- Create: `web/src/features/svg-editor/domain/colorUtils.ts`
-- Create: `web/src/features/svg-editor/__tests__/colorUtils.test.ts`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/domain/colorUtils.ts`
+- 新建：`web/src/features/svg-editor/__tests__/colorUtils.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [ ] **步骤 1：编写失败的测试**
 
 Create `web/src/features/svg-editor/__tests__/colorUtils.test.ts`:
 ```typescript
@@ -196,14 +196,14 @@ describe('roundtrip', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests, verify they fail**
+- [ ] **步骤 2：运行测试，验证全部失败**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/colorUtils.test.ts
 ```
-Expected: all FAIL (module not found)
+预期结果： 全部 FAIL（模块未找到）
 
-- [ ] **Step 3: Implement colorUtils.ts**
+- [ ] **步骤 3：实现 colorUtils.ts**
 
 Create `web/src/features/svg-editor/domain/colorUtils.ts`:
 ```typescript
@@ -273,14 +273,14 @@ export function rgbToHsv(r: number, g: number, b: number): [number, number, numb
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [ ] **步骤 4：运行测试，验证全部通过**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/colorUtils.test.ts
 ```
-Expected: 11 tests PASS
+预期结果： 11 项测试 PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add web/src/features/svg-editor/domain/colorUtils.ts web/src/features/svg-editor/__tests__/colorUtils.test.ts
@@ -289,13 +289,13 @@ git commit -m "feat: add HSV/RGB/HEX color conversion utilities"
 
 ---
 
-### Task 3: SVG Parser
+### 任务 3： SVG Parser
 
-**Files:**
-- Create: `web/src/features/svg-editor/domain/svgParser.ts`
-- Create: `web/src/features/svg-editor/__tests__/svgParser.test.ts`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/domain/svgParser.ts`
+- 新建：`web/src/features/svg-editor/__tests__/svgParser.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [ ] **步骤 1：编写失败的测试**
 
 Create `web/src/features/svg-editor/__tests__/svgParser.test.ts`:
 ```typescript
@@ -351,14 +351,14 @@ describe('buildColorMap', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests, verify they fail**
+- [ ] **步骤 2：运行测试，验证全部失败**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/svgParser.test.ts
 ```
-Expected: all FAIL
+预期结果： 全部 FAIL
 
-- [ ] **Step 3: Implement svgParser.ts**
+- [ ] **步骤 3：实现 svgParser.ts**
 
 Create `web/src/features/svg-editor/domain/svgParser.ts`:
 ```typescript
@@ -397,14 +397,14 @@ export function buildColorMap(doc: Document): ColorMap {
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [ ] **步骤 4：运行测试，验证全部通过**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/svgParser.test.ts
 ```
-Expected: 5 tests PASS
+预期结果： 5 项测试 PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add web/src/features/svg-editor/domain/svgParser.ts web/src/features/svg-editor/__tests__/svgParser.test.ts
@@ -413,13 +413,13 @@ git commit -m "feat: add SVG parser with XSS protection and ColorMap builder"
 
 ---
 
-### Task 4: Apply Color + Undo/Redo + Theme Replace
+### 任务 4： Apply Color + Undo/Redo + Theme Replace
 
-**Files:**
-- Create: `web/src/features/svg-editor/domain/applyColor.ts`
-- Create: `web/src/features/svg-editor/__tests__/applyColor.test.ts`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/domain/applyColor.ts`
+- 新建：`web/src/features/svg-editor/__tests__/applyColor.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [ ] **步骤 1：编写失败的测试**
 
 Create `web/src/features/svg-editor/__tests__/applyColor.test.ts`:
 ```typescript
@@ -524,14 +524,14 @@ describe('MAX_UNDO', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests, verify they fail**
+- [ ] **步骤 2：运行测试，验证全部失败**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/applyColor.test.ts
 ```
-Expected: all FAIL
+预期结果： 全部 FAIL
 
-- [ ] **Step 3: Implement applyColor.ts**
+- [ ] **步骤 3：实现 applyColor.ts**
 
 Create `web/src/features/svg-editor/domain/applyColor.ts`:
 ```typescript
@@ -622,14 +622,14 @@ export function themeReplace(
 }
 ```
 
-- [ ] **Step 4: Run tests, verify they pass**
+- [ ] **步骤 4：运行测试，验证全部通过**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/applyColor.test.ts
 ```
-Expected: 8 tests PASS
+预期结果： 8 项测试 PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add web/src/features/svg-editor/domain/applyColor.ts web/src/features/svg-editor/__tests__/applyColor.test.ts
@@ -638,13 +638,13 @@ git commit -m "feat: add applyColor with undo/redo and themeReplace"
 
 ---
 
-### Task 5: HueSlider + AlphaSlider
+### 任务 5： HueSlider + AlphaSlider
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/HueSlider.tsx`
-- Create: `web/src/features/svg-editor/components/AlphaSlider.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/HueSlider.tsx`
+- 新建：`web/src/features/svg-editor/components/AlphaSlider.tsx`
 
-- [ ] **Step 1: Implement HueSlider**
+- [ ] **步骤 1：implement HueSlider**
 
 Create `web/src/features/svg-editor/components/HueSlider.tsx`:
 ```typescript
@@ -673,7 +673,7 @@ export default function HueSlider({ hue, onChange }: HueSliderProps) {
 }
 ```
 
-- [ ] **Step 2: Implement AlphaSlider**
+- [ ] **步骤 2：implement AlphaSlider**
 
 Create `web/src/features/svg-editor/components/AlphaSlider.tsx`:
 ```typescript
@@ -708,7 +708,7 @@ export default function AlphaSlider({ alpha, color, onChange }: AlphaSliderProps
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/HueSlider.tsx web/src/features/svg-editor/components/AlphaSlider.tsx
@@ -717,12 +717,12 @@ git commit -m "feat: add HueSlider and AlphaSlider components"
 
 ---
 
-### Task 6: SB Panel (Saturation × Brightness)
+### 任务 6： SB Panel (Saturation × Brightness)
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/SBPanel.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/SBPanel.tsx`
 
-- [ ] **Step 1: Implement SBPanel**
+- [ ] **步骤 1：implement SBPanel**
 
 Create `web/src/features/svg-editor/components/SBPanel.tsx`:
 ```typescript
@@ -803,7 +803,7 @@ export default function SBPanel({ hue, saturation, brightness, onChange }: SBPan
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/SBPanel.tsx
@@ -812,13 +812,13 @@ git commit -m "feat: add SB panel (saturation × brightness 2D picker)"
 
 ---
 
-### Task 7: ColorPreview + ColorInput
+### 任务 7： ColorPreview + ColorInput
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/ColorPreview.tsx`
-- Create: `web/src/features/svg-editor/components/ColorInput.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/ColorPreview.tsx`
+- 新建：`web/src/features/svg-editor/components/ColorInput.tsx`
 
-- [ ] **Step 1: Implement ColorPreview**
+- [ ] **步骤 1：implement ColorPreview**
 
 Create `web/src/features/svg-editor/components/ColorPreview.tsx`:
 ```typescript
@@ -852,7 +852,7 @@ export default function ColorPreview({ color, alpha }: ColorPreviewProps) {
 }
 ```
 
-- [ ] **Step 2: Implement ColorInput**
+- [ ] **步骤 2：implement ColorInput**
 
 Create `web/src/features/svg-editor/components/ColorInput.tsx`:
 ```typescript
@@ -907,7 +907,7 @@ export default function ColorInput({ color, onChange }: ColorInputProps) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/ColorPreview.tsx web/src/features/svg-editor/components/ColorInput.tsx
@@ -916,13 +916,13 @@ git commit -m "feat: add ColorPreview and ColorInput components"
 
 ---
 
-### Task 8: ColorPicker (composes HueSlider + SBPanel + AlphaSlider + ColorPreview + ColorInput)
+### 任务 8： ColorPicker (composes HueSlider + SBPanel + AlphaSlider + ColorPreview + ColorInput)
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/ColorPicker.tsx`
-- Create: `web/src/features/svg-editor/__tests__/ColorPicker.test.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/ColorPicker.tsx`
+- 新建：`web/src/features/svg-editor/__tests__/ColorPicker.test.tsx`
 
-- [ ] **Step 1: Write failing test**
+- [ ] **步骤 1：编写失败的测试**
 
 Create `web/src/features/svg-editor/__tests__/ColorPicker.test.tsx`:
 ```typescript
@@ -942,14 +942,14 @@ describe('ColorPicker', () => {
 })
 ```
 
-- [ ] **Step 2: Run test, verify fail**
+- [ ] **步骤 2：运行测试，验证失败**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/ColorPicker.test.tsx
 ```
-Expected: FAIL (file not found)
+预期结果： FAIL（文件未找到）
 
-- [ ] **Step 3: Implement ColorPicker**
+- [ ] **步骤 3：implement ColorPicker**
 
 Create `web/src/features/svg-editor/components/ColorPicker.tsx`:
 ```typescript
@@ -1005,14 +1005,14 @@ export default function ColorPicker({ color, alpha, onColorChange, onAlphaChange
 }
 ```
 
-- [ ] **Step 4: Run test, verify pass**
+- [ ] **步骤 4：运行测试，验证通过**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/ColorPicker.test.tsx
 ```
-Expected: 2 tests PASS
+预期结果： 2 项测试 PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/ColorPicker.tsx web/src/features/svg-editor/__tests__/ColorPicker.test.tsx
@@ -1021,13 +1021,13 @@ git commit -m "feat: add ColorPicker component (Hue + SB + Alpha + Preview + Inp
 
 ---
 
-### Task 9: PresetColors + FillStrokeTabs
+### 任务 9： PresetColors + FillStrokeTabs
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/PresetColors.tsx`
-- Create: `web/src/features/svg-editor/components/FillStrokeTabs.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/PresetColors.tsx`
+- 新建：`web/src/features/svg-editor/components/FillStrokeTabs.tsx`
 
-- [ ] **Step 1: Implement PresetColors**
+- [ ] **步骤 1：implement PresetColors**
 
 Create `web/src/features/svg-editor/components/PresetColors.tsx`:
 ```typescript
@@ -1057,7 +1057,7 @@ export default function PresetColors({ onSelect }: PresetColorsProps) {
 }
 ```
 
-- [ ] **Step 2: Implement FillStrokeTabs**
+- [ ] **步骤 2：implement FillStrokeTabs**
 
 Create `web/src/features/svg-editor/components/FillStrokeTabs.tsx`:
 ```typescript
@@ -1092,7 +1092,7 @@ export default function FillStrokeTabs({ mode, onChange }: FillStrokeTabsProps) 
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/PresetColors.tsx web/src/features/svg-editor/components/FillStrokeTabs.tsx
@@ -1101,12 +1101,12 @@ git commit -m "feat: add PresetColors and FillStrokeTabs components"
 
 ---
 
-### Task 10: ElementInspector
+### 任务 10： ElementInspector
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/ElementInspector.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/ElementInspector.tsx`
 
-- [ ] **Step 1: Implement ElementInspector**
+- [ ] **步骤 1：implement ElementInspector**
 
 Create `web/src/features/svg-editor/components/ElementInspector.tsx`:
 ```typescript
@@ -1148,7 +1148,7 @@ export default function ElementInspector({ element }: ElementInspectorProps) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/ElementInspector.tsx
@@ -1157,12 +1157,12 @@ git commit -m "feat: add ElementInspector component"
 
 ---
 
-### Task 11: ThemeReplacer
+### 任务 11： ThemeReplacer
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/ThemeReplacer.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/ThemeReplacer.tsx`
 
-- [ ] **Step 1: Implement ThemeReplacer**
+- [ ] **步骤 1：implement ThemeReplacer**
 
 Create `web/src/features/svg-editor/components/ThemeReplacer.tsx`:
 ```typescript
@@ -1215,7 +1215,7 @@ export default function ThemeReplacer({ colorMap, targetColor, mode, onReplace }
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/ThemeReplacer.tsx
@@ -1224,12 +1224,12 @@ git commit -m "feat: add ThemeReplacer component"
 
 ---
 
-### Task 12: SvgCanvas
+### 任务 12： SvgCanvas
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/SvgCanvas.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/SvgCanvas.tsx`
 
-- [ ] **Step 1: Implement SvgCanvas**
+- [ ] **步骤 1：implement SvgCanvas**
 
 Create `web/src/features/svg-editor/components/SvgCanvas.tsx`:
 ```typescript
@@ -1337,7 +1337,7 @@ export default function SvgCanvas({ svg, selectedElement, onSelect, onError }: S
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **步骤 2：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/SvgCanvas.tsx
@@ -1346,13 +1346,13 @@ git commit -m "feat: add SvgCanvas with paste/drop SVG and element selection"
 
 ---
 
-### Task 13: EditorToolbar + SidePanel
+### 任务 13： EditorToolbar + SidePanel
 
-**Files:**
-- Create: `web/src/features/svg-editor/components/EditorToolbar.tsx`
-- Create: `web/src/features/svg-editor/components/SidePanel.tsx`
+**涉及文件：**
+- 新建：`web/src/features/svg-editor/components/EditorToolbar.tsx`
+- 新建：`web/src/features/svg-editor/components/SidePanel.tsx`
 
-- [ ] **Step 1: Implement EditorToolbar**
+- [ ] **步骤 1：implement EditorToolbar**
 
 Create `web/src/features/svg-editor/components/EditorToolbar.tsx`:
 ```typescript
@@ -1404,7 +1404,7 @@ export default function EditorToolbar({ canUndo, canRedo, canExport, onUndo, onR
 }
 ```
 
-- [ ] **Step 2: Implement SidePanel**
+- [ ] **步骤 2：implement SidePanel**
 
 Create `web/src/features/svg-editor/components/SidePanel.tsx`:
 ```typescript
@@ -1423,7 +1423,7 @@ export default function SidePanel({ children }: SidePanelProps) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：commit**
 
 ```bash
 git add web/src/features/svg-editor/components/EditorToolbar.tsx web/src/features/svg-editor/components/SidePanel.tsx
@@ -1432,13 +1432,13 @@ git commit -m "feat: add EditorToolbar and SidePanel components"
 
 ---
 
-### Task 14: EditorPage (main page, wires everything together)
+### 任务 14： EditorPage (main page, wires everything together)
 
-**Files:**
-- Create: `web/src/pages/EditorPage.tsx`
-- Create: `web/src/features/svg-editor/__tests__/EditorPage.test.tsx`
+**涉及文件：**
+- 新建：`web/src/pages/EditorPage.tsx`
+- 新建：`web/src/features/svg-editor/__tests__/EditorPage.test.tsx`
 
-- [ ] **Step 1: Write failing test**
+- [ ] **步骤 1：编写失败的测试**
 
 Create `web/src/features/svg-editor/__tests__/EditorPage.test.tsx`:
 ```typescript
@@ -1459,14 +1459,14 @@ describe('EditorPage (smoke)', () => {
 })
 ```
 
-- [ ] **Step 2: Run test, verify fail**
+- [ ] **步骤 2：运行测试，验证失败**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/EditorPage.test.tsx
 ```
-Expected: FAIL (file not found)
+预期结果： FAIL（文件未找到）
 
-- [ ] **Step 3: Implement EditorPage**
+- [ ] **步骤 3：implement EditorPage**
 
 Create `web/src/pages/EditorPage.tsx`:
 ```typescript
@@ -1652,29 +1652,29 @@ export default function EditorPage() {
 }
 ```
 
-- [ ] **Step 4: Run smoke test, verify pass**
+- [ ] **步骤 4：run smoke test, verify pass**
 
 ```bash
 cd web && npx vitest --run src/features/svg-editor/__tests__/EditorPage.test.tsx
 ```
-Expected: 1 test PASS
+预期结果： 1 项测试 PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：commit**
 
 ```bash
 git add web/src/pages/EditorPage.tsx web/src/features/svg-editor/__tests__/EditorPage.test.tsx
-git commit -m "feat: add EditorPage — SVG color editor main page"
+git commit -m "feat: add EditorPage —— SVG color editor main page"
 ```
 
 ---
 
-### Task 15: Route + Navbar Integration
+### 任务 15： Route + Navbar Integration
 
-**Files:**
-- Modify: `web/src/App.tsx:12,44` (add import + route)
-- Modify: `web/src/components/Navbar.tsx:57` (add Editor link)
+**涉及文件：**
+- 修改：`web/src/App.tsx:12,44` (add import + route)
+- 修改：`web/src/components/Navbar.tsx:57` (add Editor link)
 
-- [ ] **Step 1: Add route in App.tsx**
+- [ ] **步骤 1：add route in App.tsx**
 
 Add import:
 ```typescript
@@ -1686,7 +1686,7 @@ Add route after line 44 (`<Route path="library" element={<LibraryPage />} />`):
 <Route path="editor" element={<EditorPage />} />
 ```
 
-- [ ] **Step 2: Add Navbar link**
+- [ ] **步骤 2：add Navbar link**
 
 After the Library link (line 57), add:
 ```typescript
@@ -1698,14 +1698,14 @@ After the Library link (line 57), add:
 </Link>
 ```
 
-- [ ] **Step 3: Build to verify no compile errors**
+- [ ] **步骤 3：build to verify no compile errors**
 
 ```bash
 cd web && npx tsc -b
 ```
-Expected: zero errors
+预期结果： 零错误
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：commit**
 
 ```bash
 git add web/src/App.tsx web/src/components/Navbar.tsx
@@ -1714,39 +1714,39 @@ git commit -m "feat: wire /workspace/editor route and Navbar link"
 
 ---
 
-### Task 16: E2E Verification
+### 任务 16： E2E Verification
 
-**Files:** None (manual verification)
+**涉及文件：** None (manual verification)
 
-- [ ] **Step 1: Build frontend**
+- [ ] **步骤 1：build frontend**
 
 ```bash
 cd web && npm run build
 ```
-Expected: Vite build succeeds.
+预期结果： Vite 构建成功。
 
-- [ ] **Step 2: Run all tests**
+- [ ] **步骤 2：run all tests**
 
 ```bash
 cd web && npx vitest --run
 ```
-Expected: all tests pass (~14 tests across colorUtils, svgParser, applyColor, ColorPicker, EditorPage).
+预期结果： 全部测试通过（约 14 项，覆盖 colorUtils、svgParser、applyColor、ColorPicker、EditorPage 五个文件）。
 
-- [ ] **Step 3: Type check**
+- [ ] **步骤 3：type check**
 
 ```bash
 cd web && npx tsc -b
 ```
-Expected: zero errors.
+预期结果： 零错误.
 
-- [ ] **Step 4: QA gate**
+- [ ] **步骤 4：qA gate**
 
 ```bash
 bash scripts/qa.sh
 ```
-Expected: all checks pass (note: `openspec validate` may show "Nothing to validate" — acceptable since this is a frontend-only feature with no OpenSpec artifact).
+预期结果： 全部检查通过（注：`openspec validate` 可能显示 "Nothing to validate" —— 可接受，此为纯前端功能，无 OpenSpec 产物）。
 
-- [ ] **Step 5: Commit verification**
+- [ ] **步骤 5：commit verification**
 
 ```bash
 git add -A

@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS icon_themes;
+DROP TABLE IF EXISTS icon_colors;
+DROP TABLE IF EXISTS icon_tags;
+DROP TABLE IF EXISTS tags;

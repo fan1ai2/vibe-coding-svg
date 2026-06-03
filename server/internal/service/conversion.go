@@ -41,7 +41,7 @@ func NewConversionService(cfg *config.Config, r *repo.ConversionRepo, s *Storage
 
 // Enqueue 上传原始文件到对象存储，创建转换记录并将任务加入队列
 func (s *ConversionService) Enqueue(userID string, file io.Reader, filename string, size int64) (*model.Conversion, error) {
-	// Guest quota: lifetime 3 conversions max
+	// 访客配额：终身最多 3 次转换
 	provider, err := s.repo.FindProviderByID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("quota check: %w", err)
@@ -54,6 +54,15 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 		if count >= 3 {
 			return nil, fmt.Errorf("试用次数已用完（%d/3），请登录后继续使用", count)
 		}
+	}
+
+	// 每日配额检查（在其他 I/O 之前执行，避免产生脏数据）
+	ok, err := s.repo.IncrementQuota(userID, MaxDailyConversions)
+	if err != nil {
+		return nil, fmt.Errorf("quota increment: %w", err)
+	}
+	if !ok {
+		return nil, fmt.Errorf("每日配额已用完 (%d)", MaxDailyConversions)
 	}
 
 	// 解析文件扩展名确定输入格式
@@ -104,15 +113,6 @@ func (s *ConversionService) Enqueue(userID string, file io.Reader, filename stri
 	}
 	if err := s.repo.Create(conv); err != nil {
 		return nil, fmt.Errorf("create conversion: %w", err)
-	}
-
-	// 检查并递增每日配额
-	ok, err := s.repo.IncrementQuota(userID, MaxDailyConversions)
-	if err != nil {
-		return nil, fmt.Errorf("quota increment: %w", err)
-	}
-	if !ok {
-		return nil, fmt.Errorf("每日配额已用完 (%d)", MaxDailyConversions)
 	}
 
 	return conv, nil

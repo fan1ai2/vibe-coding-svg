@@ -12,6 +12,7 @@ import (
 
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/config"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/migrate"
+	"github.com/fan1ai2/vibe-coding-svg/server/internal/neo4j"
 	"github.com/fan1ai2/vibe-coding-svg/server/internal/router"
 	_ "github.com/lib/pq"
 )
@@ -74,5 +75,6 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("服务器关闭失败: %v", err)
 	}
+	neo4j.Close()
 	log.Println("服务器已安全关闭")
 }

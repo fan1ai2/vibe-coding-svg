@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { conversions, ApiError, type Conversion } from '../api/client';
+import { conversions, icons, ApiError, type Conversion } from '../api/client';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PublishDialog from '../components/PublishDialog';
 
 function authFetch(url: string, init?: RequestInit): Promise<Response> {
   const token = localStorage.getItem('token');
@@ -20,6 +21,8 @@ export default function PreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [originalBlobUrl, setOriginalBlobUrl] = useState<string | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const revokedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -57,6 +60,20 @@ export default function PreviewPage() {
     };
   }, [id]);
 
+  const handlePublish = async (name: string, tags: { name: string; type: string }[], theme: string, isPublic: boolean) => {
+    if (!svgContent) return
+    try {
+      const res = await icons.create({ name, svg_content: svgContent, is_public: isPublic, tags, theme })
+      setShowPublish(false)
+      setToast('已发布到图标库')
+      setTimeout(() => navigate(`/icons/${res.data.id}`), 1000)
+    } catch (err) {
+      console.error('Publish failed:', err)
+      setToast('发布失败，请重试')
+      setTimeout(() => setToast(null), 3000)
+    }
+  }
+
   if (loading) return <LoadingSpinner label="Loading preview..." />;
   if (error) return <div className="text-red-600 text-center py-12">{error}</div>;
   if (!conv) return <div className="text-gray-500 text-center py-12">Not found</div>;
@@ -67,6 +84,12 @@ export default function PreviewPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {toast && (
+        <div className="fixed top-20 right-4 z-50 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Preview</h2>
         <div className="flex gap-3">
@@ -87,6 +110,19 @@ export default function PreviewPage() {
                     d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
                 Open in Editor
+              </button>
+              <button
+                onClick={() => {
+                  if (svgContent) setShowPublish(true)
+                }}
+                disabled={!svgContent}
+                className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 transition-colors disabled:opacity-50"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                Save to Library
               </button>
               <button
                 onClick={async () => {
@@ -171,6 +207,14 @@ export default function PreviewPage() {
           <MetaItem label="Colors" value={String(conv.color_count)} />
           <MetaItem label="Format" value={conv.format_in.toUpperCase()} />
         </div>
+      )}
+
+      {showPublish && (
+        <PublishDialog
+          onClose={() => setShowPublish(false)}
+          onPublish={handlePublish}
+          defaultName={`Converted ${conv.id.slice(0, 8)}`}
+        />
       )}
     </div>
   );

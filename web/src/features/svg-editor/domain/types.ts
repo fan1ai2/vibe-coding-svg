@@ -15,14 +15,14 @@ export interface PresetColor {
 }
 
 export const PRESETS: PresetColor[] = [
-  { hex: '#EF4444', name: 'Red' },
-  { hex: '#F97316', name: 'Orange' },
-  { hex: '#EAB308', name: 'Yellow' },
-  { hex: '#22C55E', name: 'Green' },
-  { hex: '#3B82F6', name: 'Blue' },
-  { hex: '#8B5CF6', name: 'Purple' },
-  { hex: '#EC4899', name: 'Pink' },
-  { hex: '#6B7280', name: 'Gray' },
+  { hex: '#EF4444', name: '红色' },
+  { hex: '#F97316', name: '橙色' },
+  { hex: '#EAB308', name: '黄色' },
+  { hex: '#22C55E', name: '绿色' },
+  { hex: '#3B82F6', name: '蓝色' },
+  { hex: '#8B5CF6', name: '紫色' },
+  { hex: '#EC4899', name: '粉色' },
+  { hex: '#6B7280', name: '灰色' },
 ]
 
 export const COLORABLE_TAGS = new Set([

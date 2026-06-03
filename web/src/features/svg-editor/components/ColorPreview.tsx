@@ -11,7 +11,7 @@ function hexWithAlpha(hex: string, alpha: number): string {
 export default function ColorPreview({ color, alpha }: ColorPreviewProps) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">Preview</label>
+      <label className="text-xs font-medium text-gray-500">预览</label>
       <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
         <div className="h-1/2" style={{ backgroundColor: color }} />
         <div

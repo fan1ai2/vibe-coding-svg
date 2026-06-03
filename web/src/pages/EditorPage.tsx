@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { conversions } from '../api/client'
+import { svgs, icons, ApiError } from '../api/client'
+import PublishDialog from '../components/PublishDialog'
 import { createColorState, applyColor, undo, redo, themeReplace } from '../features/svg-editor/domain/applyColor'
 import { ColorMode } from '../features/svg-editor/domain/types'
 import SvgCanvas from '../features/svg-editor/components/SvgCanvas'
@@ -18,7 +19,6 @@ export default function EditorPage() {
   const navigate = useNavigate()
 
   const [svgString, setSvgString] = useState<string | null>(null)
-  const [svgDoc, setSvgDoc] = useState<Document | null>(null)
   const [colorState, setColorState] = useState<ReturnType<typeof createColorState> | null>(null)
   const [selectedElement, setSelectedElement] = useState<SVGElement | null>(null)
   const [currentColor, setCurrentColor] = useState('#3B82F6')
@@ -26,6 +26,7 @@ export default function EditorPage() {
   const [mode, setMode] = useState<ColorMode>('fill')
   const [toast, setToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showPublish, setShowPublish] = useState(false)
   const [renderTick, setRenderTick] = useState(0)
   void renderTick
 
@@ -34,9 +35,17 @@ export default function EditorPage() {
     setTimeout(() => setToast(null), 3000)
   }, [])
 
+  // Load SVG passed via sessionStorage (from conversion preview or icon detail)
+  useEffect(() => {
+    const pending = sessionStorage.getItem('editor:pendingSvg')
+    if (pending) {
+      sessionStorage.removeItem('editor:pendingSvg')
+      setSvgString(pending)
+    }
+  }, [])
+
   const handleSvgLoaded = useCallback((svg: string, doc: Document) => {
     setSvgString(svg)
-    setSvgDoc(doc)
     const state = createColorState(doc)
     setColorState(state)
   }, [])
@@ -71,12 +80,19 @@ export default function EditorPage() {
   }, [colorState, showToast])
 
   const serializeSvg = useCallback((): string | null => {
-    if (!svgDoc) return null
+    const svgEl = document.querySelector('[data-editor-svg]') as SVGElement | null
+    if (!svgEl) return null
+    const clone = svgEl.cloneNode(true) as SVGElement
+    clone.removeAttribute('data-editor-svg')
+    clone.querySelectorAll('style').forEach(s => {
+      if (s.textContent?.includes('[data-selected]')) s.remove()
+    })
+    clone.querySelectorAll('[data-selected]').forEach(el => el.removeAttribute('data-selected'))
     const serializer = new XMLSerializer()
-    return serializer.serializeToString(svgDoc.documentElement)
-  }, [svgDoc])
+    return serializer.serializeToString(clone)
+  }, [])
 
-  const handleDownload = useCallback(() => {
+  const handleDownloadSvg = useCallback(() => {
     const str = serializeSvg()
     if (!str) return
     const blob = new Blob([str], { type: 'image/svg+xml' })
@@ -86,7 +102,36 @@ export default function EditorPage() {
     a.download = `edited-${Date.now()}.svg`
     a.click()
     URL.revokeObjectURL(url)
-    showToast('下载完成')
+    showToast('SVG 下载完成')
+  }, [serializeSvg, showToast])
+
+  const handleExportPng = useCallback((scale: number) => {
+    const str = serializeSvg()
+    if (!str) return
+    const svgEl = document.querySelector('[data-editor-svg]') as SVGElement | null
+    const rect = svgEl?.getBoundingClientRect()
+    const w = rect?.width || 512
+    const h = rect?.height || 512
+    const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str)
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = w * scale
+      canvas.height = h * scale
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `exported-${Date.now()}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast(`PNG ${scale}x 导出完成`)
+      }, 'image/png')
+    }
+    img.src = dataUrl
   }, [serializeSvg, showToast])
 
   const handleCopy = useCallback(async () => {
@@ -99,14 +144,42 @@ export default function EditorPage() {
   const handleSave = useCallback(async () => {
     if (!token) { navigate('/'); return }
     const str = serializeSvg()
-    if (!str) return
-    const blob = new Blob([str], { type: 'image/svg+xml' })
-    const file = new File([blob], `edited-${Date.now()}.svg`, { type: 'image/svg+xml' })
+    if (!str) {
+      setError('无法导出 SVG — 画布中无内容')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
     try {
-      await conversions.upload(file)
+      await svgs.save(`Edited ${new Date().toLocaleString()}`, str)
       showToast('已保存到 Library')
-    } catch {
-      setError('保存失败，请重试')
+    } catch (err) {
+      console.error('Save failed:', err)
+      if (err instanceof ApiError && (err.status === 401 || err.code === 'UNAUTHORIZED')) {
+        setError('登录已过期，请重新登录')
+        setTimeout(() => navigate('/'), 1500)
+      } else {
+        setError('保存失败，请重试')
+      }
+      setTimeout(() => setError(null), 3000)
+    }
+  }, [token, navigate, showToast, serializeSvg])
+
+  const handlePublish = useCallback(async (name: string, tags: { name: string; type: string }[], theme: string, isPublic: boolean) => {
+    if (!token) { navigate('/'); return }
+    const str = serializeSvg()
+    if (!str) {
+      setError('无法导出 SVG — 画布中无内容')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+    try {
+      const res = await icons.create({ name, svg_content: str, is_public: isPublic, tags, theme })
+      setShowPublish(false)
+      showToast(`已发布到图标库`)
+      setTimeout(() => navigate(`/icons/${res.data.id}`), 1000)
+    } catch (err) {
+      console.error('Publish failed:', err)
+      setError('发布失败，请重试')
       setTimeout(() => setError(null), 3000)
     }
   }, [token, navigate, showToast, serializeSvg])
@@ -162,12 +235,22 @@ export default function EditorPage() {
             canExport={svgString !== null}
             onUndo={handleUndo}
             onRedo={handleRedo}
-            onDownload={handleDownload}
+            onDownloadSvg={handleDownloadSvg}
+            onExportPng={handleExportPng}
             onCopy={handleCopy}
             onSave={handleSave}
+            onPublish={() => setShowPublish(true)}
           />
         </SidePanel>
       </div>
+
+      {showPublish && (
+        <PublishDialog
+          onClose={() => setShowPublish(false)}
+          onPublish={handlePublish}
+          defaultName={`Edited ${new Date().toLocaleString()}`}
+        />
+      )}
     </div>
   )
 }
